@@ -12,11 +12,12 @@ module IENotificationHelper {
   export function openPopup() {
     try {
       let title = getUrlParameter('title');
+      let path = getUrlParameter('path');
       let height = 125;
       let width = screen.width * 0.2 + 5;
       let left = screen.width - width;
       let top = screen.height - height;
-      let popup = window.showModelessDialog(`content.html${location.search}`, title, 
+      let popup = window.showModelessDialog(`${path}content.html${location.search}`, title, 
         `dialogWidth:${width}px;dialogHeight:${height}px;dialogTop:${top}px;dialogLeft:${left}px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes`);
       let notification = window.notificationHost;
       notification.popup = popup;
