@@ -113,7 +113,7 @@ var IENotification = (function (_super) {
         var width = screen.width * 0.2;
         var left = screen.width - width;
         var top = screen.height - height;
-        var bridge = window.open("bridge.html?title=" + self.title + "&body=" + self.body + "&icon=" + self.icon, "", "width=" + width + ",height=" + height + ",top=" + top + ",left=" + left + ",center=0,resizable=0,scroll=0,status=0");
+        var bridge = window.open(IENotification.rootPath + "bridge.html?title=" + self.title + "&body=" + self.body + "&icon=" + self.icon + "&path=" + IENotification.rootPath, "", "width=" + width + ",height=" + height + ",top=" + top + ",left=" + left + ",center=0,resizable=0,scroll=0,status=0");
         bridge.notificationHost = self;
         self.fire(EVENT_OPEN);
     };
@@ -161,6 +161,7 @@ var IENotification = (function (_super) {
         window.focus();
     };
     IENotification.timeout = 20000;
+    IENotification.rootPath = '';
     return IENotification;
 }(Observable));
 var IENotificationQueue;

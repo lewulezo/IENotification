@@ -7,11 +7,12 @@ var IENotificationHelper;
     function openPopup() {
         try {
             var title = getUrlParameter('title');
+            var path = getUrlParameter('path');
             var height = 125;
             var width = screen.width * 0.2 + 5;
             var left = screen.width - width;
             var top_1 = screen.height - height;
-            var popup = window.showModelessDialog("content.html" + location.search, title, "dialogWidth:" + width + "px;dialogHeight:" + height + "px;dialogTop:" + top_1 + "px;dialogLeft:" + left + "px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes");
+            var popup = window.showModelessDialog(path + "content.html" + location.search, title, "dialogWidth:" + width + "px;dialogHeight:" + height + "px;dialogTop:" + top_1 + "px;dialogLeft:" + left + "px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes");
             var notification = window.notificationHost;
             notification.popup = popup;
         }

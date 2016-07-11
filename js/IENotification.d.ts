@@ -43,6 +43,7 @@ declare class IENotification extends Observable {
     private _popup;
     delayTasks: DelayTasks;
     static timeout: number;
+    static rootPath: string;
     constructor(title: string, options: any);
     show(): void;
     close(): void;
