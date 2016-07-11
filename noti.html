@@ -1,0 +1,20 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+  </head>
+  <body >
+    <script>
+      function test(){
+        Notification.requestPermission(function(permission){
+          new Notification('test', {
+            body: 'this is a test body',
+            data: 'this is a test data',
+            icon: 'msg_info.png'
+          });
+        });
+      }
+    </script>
+    <script src="js/IENotification.js"></script>
+    <button id='test' onclick="test()">test</button>
+  </body>
+</html>

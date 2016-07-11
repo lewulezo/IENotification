@@ -1,0 +1,10 @@
+{
+  "name": "IENotification",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HTML5 browser notification implement for IE11",
+  "devDependencies": {
+    "less": "~2.7.1",
+    "typescript": "~1.8.10"
+  }
+}

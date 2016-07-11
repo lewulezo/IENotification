@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	</head>
+	<body onload="init()">
+		<button onclick="test()">test</button>
+		<script src="js/IENotification.js"></script>
+		<script>
+			function init(){
+			}
+			function test(){
+				setTimeout(function(){
+					var notification = new Notification('Notification test: ', {
+						body: 'Hey!! You have a new message!!',
+						icon: 'msg_info.png',
+						data: 'click got!'
+					});
+					notification.onclick = function(event){
+						console.log(event.notification.data);
+					}
+
+				}, 5000);
+			}
+		</script>
+	</body>
+</html>

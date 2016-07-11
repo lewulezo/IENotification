@@ -1,0 +1,33 @@
+@notification-icon-width: 40px;
+@notification-icon-height: 40px;
+@notification-height: 80px;
+
+
+body{
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+
+  #content-div:extend(.common-block) {
+    #icon-div:extend(.common-block) {
+      width:@notification-icon-width;
+      img#icon-img {
+        padding: (@notification-height - @notification-icon-height) / 2;
+        width: @notification-icon-width;
+        height: @notification-icon-height;
+      }
+    }
+
+    #body-div:extend(.common-block) {
+      padding-top: 20px;
+      left: @notification-icon-width * 2;
+      font-family: Arial, Helvetica, sans-serif; 
+    }
+  }
+}
+
+.common-block {
+  position: absolute;
+  width: 100%;
+  height: @notification-height;
+}
