@@ -4,9 +4,10 @@ interface Window {
     focus(): any;
     addEventListener(eventName: string, handler: Function): any;
     Notification: any;
-    notificationHost: IENotification;
     showModalDialog(dialog: string, varArgIn: any, varOptions: any): any;
     setTimeout(func: Function, timeout: number): any;
+    showModelessDialog(url: string, param: any, options: string): any;
+    dialogArguments: any;
 }
 declare var window: Window;
 declare class Observable {
@@ -41,6 +42,7 @@ declare class IENotification extends Observable {
     data: string;
     onclick: Function;
     private _popup;
+    private _bridge;
     delayTasks: DelayTasks;
     static timeout: number;
     static rootPath: string;
@@ -48,10 +50,13 @@ declare class IENotification extends Observable {
     show(): void;
     close(): void;
     dispose(): void;
-    private popup;
+    private _initBridge(bridge);
+    private _initPopup(popup);
+    static initContentInPopup(popup: Window): void;
     static requestPermission(callback: Function): void;
     private _doClick(event);
 }
+declare function appendBlankForTitle(title: string): string;
 declare module IENotificationQueue {
     function add(noti: IENotification): void;
 }

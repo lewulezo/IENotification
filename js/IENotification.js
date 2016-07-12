@@ -113,8 +113,13 @@ var IENotification = (function (_super) {
         var width = screen.width * 0.2;
         var left = screen.width - width;
         var top = screen.height - height;
-        var bridge = window.open(IENotification.rootPath + "bridge.html?title=" + self.title + "&body=" + self.body + "&icon=" + self.icon, "", "width=" + width + ",height=" + height + ",top=" + top + ",left=" + left + ",center=0,resizable=0,scroll=0,status=0,location=0");
-        bridge.notificationHost = self;
+        var bridge = window.open('bridge.html', self.title, "width=" + width + ",height=" + height + ",top=" + top + ",left=" + left + ",center=0,resizable=0,scroll=0,status=0,location=0");
+        self._bridge = bridge;
+        self.delayTasks.addTask('initBridge', function () {
+            self._initBridge(bridge);
+            bridge.blur();
+            // setTimeout(()=>bridge.close(), 100);
+        }, 10);
         self.fire(EVENT_OPEN);
     };
     IENotification.prototype.close = function () {
@@ -128,25 +133,39 @@ var IENotification = (function (_super) {
     IENotification.prototype.dispose = function () {
         var self = this;
         this.delayTasks.endAllTasks();
+        if (self._bridge) {
+            self._bridge.close();
+        }
         self.fire(EVENT_DISPOSE);
     };
-    Object.defineProperty(IENotification.prototype, "popup", {
-        set: function (popup) {
-            var self = this;
-            self._popup = popup;
-            popup.notificationHost = self;
-            window.setTimeout(function () {
-                popup.onclick = function (event) {
-                    self._doClick(event);
-                };
-                popup.addEventListener('unload', function () { return self.dispose(); });
-                popup.focus();
-            }, 100);
-            window.setTimeout(function () { return self.close(); }, IENotification.timeout);
-        },
-        enumerable: true,
-        configurable: true
-    });
+    IENotification.prototype._initBridge = function (bridge) {
+        var self = this;
+        var height = 120 + 5;
+        var width = screen.width * 0.2 + 5;
+        var left = screen.width - width;
+        var top = screen.height - height;
+        var popup = bridge.showModelessDialog("content.html", self, "dialogWidth:" + width + "px;dialogHeight:" + height + "px;dialogTop:" + top + "px;dialogLeft:" + left + "px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes");
+        self._popup = popup;
+        self.delayTasks.addTask('closePopup', function () { return self.close(); }, IENotification.timeout);
+    };
+    IENotification.prototype._initPopup = function (popup) {
+        var self = this;
+        var bodyDiv = popup.document.getElementById('body-div');
+        bodyDiv.innerText = self.body;
+        var iconImg = popup.document.getElementById('icon-img');
+        document.title = appendBlankForTitle(self.title);
+        iconImg.src = self.icon;
+        popup.addEventListener('click', function (event) { return self._doClick(event); });
+        popup.addEventListener('unload', function () { self.dispose(); });
+        popup.addEventListener('mousedown', function () { return console.log('1'); });
+        popup.addEventListener('drag', function () { return console.log('2'); });
+        popup.addEventListener('dragenter', function () { return console.log('3'); });
+        popup.addEventListener('dragstart', function () { return console.log('4'); });
+        popup.focus();
+    };
+    IENotification.initContentInPopup = function (popup) {
+        popup.dialogArguments._initPopup(popup);
+    };
     //We don't need to implement this, just compatible with formal API
     IENotification.requestPermission = function (callback) {
         callback('granted');
@@ -164,6 +183,13 @@ var IENotification = (function (_super) {
     IENotification.rootPath = '';
     return IENotification;
 }(Observable));
+function appendBlankForTitle(title) {
+    var ret = [title];
+    for (var i = 0; i < 40; i++) {
+        ret.push('\u00A0\u00A0\u00A0\u00A0\u00A0');
+    }
+    return ret.join('');
+}
 var IENotificationQueue;
 (function (IENotificationQueue) {
     var maxQueueSize = 20;

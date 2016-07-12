@@ -5,9 +5,10 @@ declare interface Window{
   focus();
   addEventListener(eventName:string, handler:Function);
   Notification;
-  notificationHost:IENotification;
   showModalDialog(dialog:string, varArgIn, varOptions);
   setTimeout(func:Function, timeout:number);
+  showModelessDialog(url:string, param:any, options:string);
+  dialogArguments:any;
 }
 declare var window:Window;
 
@@ -98,12 +99,21 @@ class DelayTasks{
     this.tasks = {};
   }
 
-  addTask(taskName:string, func:Function, delay:number):void{
-    this.tasks[taskName] = setTimeout(func, delay);
+  addTask(taskName:string, func:Function, delay:number, repeat=false):void{
+    if (repeat){
+      this.tasks[taskName] = - setInterval(func, delay);
+    } else {
+      this.tasks[taskName] = setTimeout(func, delay);
+    }
   }
 
   endTask(taskName):void{
-    clearTimeout(this.tasks[taskName]);
+    let id = this.tasks[taskName];
+    if (id > 0){
+      clearTimeout(id);
+    } else {
+      clearInterval(-id);
+    }
     delete this.tasks[taskName];
   }
 
@@ -125,6 +135,7 @@ class IENotification extends Observable{
   data: string;
   onclick: Function;
   private _popup: Window;
+  private _bridge: Window;
   delayTasks: DelayTasks;
 
   static timeout = 20000;
@@ -149,9 +160,15 @@ class IENotification extends Observable{
     let width = screen.width * 0.2;
     let left = screen.width - width;
     let top = screen.height - height;
-    let bridge:Window = window.open(`${IENotification.rootPath}bridge.html?title=${self.title}&body=${self.body}&icon=${self.icon}`, "", 
+    let bridge:Window = window.open('bridge.html', self.title, 
     `width=${width},height=${height},top=${top},left=${left},center=0,resizable=0,scroll=0,status=0,location=0`);
-    bridge.notificationHost = self;
+
+    self._bridge = bridge;
+    self.delayTasks.addTask('initBridge', ()=> {
+      self._initBridge(bridge);
+      // setTimeout(()=>bridge.close(), 100);
+    }, 10);
+    
     self.fire(EVENT_OPEN);    
   }
   
@@ -167,23 +184,39 @@ class IENotification extends Observable{
   dispose():void{
     let self = this;
     this.delayTasks.endAllTasks();
+    if (self._bridge){
+      self._bridge.close();
+    }
     self.fire(EVENT_DISPOSE);    
   }
 
-  private set popup(popup:Window){
-    let self:IENotification = this;
+
+  private _initBridge(bridge:Window){
+    let self = this;
+    let height = 120 + 5;
+    let width = screen.width * 0.2 + 5;
+    let left = screen.width - width;
+    let top = screen.height - height;
+    let popup = bridge.showModelessDialog(`content.html`, self, 
+      `dialogWidth:${width}px;dialogHeight:${height}px;dialogTop:${top}px;dialogLeft:${left}px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes`);
+
     self._popup = popup;
-    popup.notificationHost = self;
-    window.setTimeout(()=>{
-      popup.onclick = (event)=>{
-        self._doClick(event);
-      }
-      popup.addEventListener('unload', ()=>self.dispose());
-      popup.focus();
-    }, 100);
-    window.setTimeout(()=>self.close(), IENotification.timeout);
+    self.delayTasks.addTask('closePopup', ()=>self.close(), IENotification.timeout);
   }
 
+  private _initPopup(popup:Window){
+    let self = this;
+    let bodyDiv = popup.document.getElementById('body-div');
+    bodyDiv.innerText = self.body;
+    let iconImg = <HTMLImageElement>popup.document.getElementById('icon-img');
+    document.title = appendBlankForTitle(self.title);
+    iconImg.src = self.icon;
+    popup.focus();
+  }
+
+  static initContentInPopup(popup:Window){
+    popup.dialogArguments._initPopup(popup);
+  }
 
   //We don't need to implement this, just compatible with formal API
   static requestPermission(callback:Function){
@@ -201,6 +234,20 @@ class IENotification extends Observable{
   }
 }
 
+function appendBlankForTitle(title:string):string {
+  let ret = [title];
+  for (let i = 0; i < 40; i++) {
+    ret.push('\u00A0\u00A0\u00A0\u00A0\u00A0');
+  }
+  return ret.join('');
+}
+
+
+function syncWindowPosition(win1:Window, win2:Window){
+  let x = win1.screenX;
+  let y = win1.screenY;
+  win2.moveTo(x+5, y+5);
+}
 
 module IENotificationQueue{
   let maxQueueSize = 20;

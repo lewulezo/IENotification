@@ -4,24 +4,23 @@ var IENotificationHelper;
     /**
      * this function is used in bridge.html
      */
-    function openPopup() {
-        try {
-            var title = getUrlParameter('title');
-            var height = 125;
-            var width = screen.width * 0.2 + 5;
-            var left = screen.width - width;
-            var top_1 = screen.height - height;
-            var popup = window.showModelessDialog("content.html" + location.search, title, "dialogWidth:" + width + "px;dialogHeight:" + height + "px;dialogTop:" + top_1 + "px;dialogLeft:" + left + "px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes");
-            var notification = window.notificationHost;
-            notification.popup = popup;
-        }
-        catch (error) {
-            console.log("open popup failed...");
-            console.log(error);
-        }
-        window.setTimeout(function () { return window.close(); }, 100);
-    }
-    IENotificationHelper.openPopup = openPopup;
+    // export function openPopup() {
+    //   try {
+    //     let title = getUrlParameter('title');
+    //     let height = 125;
+    //     let width = screen.width * 0.2 + 5;
+    //     let left = screen.width - width;
+    //     let top = screen.height - height;
+    //     let popup = window.showModelessDialog(`content.html${location.search}`, title, 
+    //       `dialogWidth:${width}px;dialogHeight:${height}px;dialogTop:${top}px;dialogLeft:${left}px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes`);
+    //     let notification = window.notificationHost;
+    //     notification.popup = popup;
+    //   } catch (error) {
+    //     console.log("open popup failed...");
+    //     console.log(error);
+    //   }
+    //   window.setTimeout(()=>window.close(), 100);
+    // }
     /**
      * this function is used in popup.html
      */
