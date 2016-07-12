@@ -187,7 +187,7 @@ class IENotification extends Observable{
 
   //We don't need to implement this, just compatible with formal API
   static requestPermission(callback:Function){
-    callback('default');
+    callback('granted');
   }
 
   private _doClick(event:Event){
