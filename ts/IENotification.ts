@@ -150,7 +150,7 @@ class IENotification extends Observable{
     let left = screen.width - width;
     let top = screen.height - height;
     let bridge:Window = window.open(`${IENotification.rootPath}bridge.html?title=${self.title}&body=${self.body}&icon=${self.icon}`, "", 
-    `width=${width},height=${height},top=${top},left=${left},center=0,resizable=0,scroll=0,status=0`);
+    `width=${width},height=${height},top=${top},left=${left},center=0,resizable=0,scroll=0,status=0,location=0`);
     bridge.notificationHost = self;
     self.fire(EVENT_OPEN);    
   }
