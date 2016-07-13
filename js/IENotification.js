@@ -132,7 +132,6 @@ var IENotification = (function (_super) {
         self._bridge = bridge;
         self.delayTasks.addTask('initBridge', function () {
             self._initBridge(bridge);
-            // setTimeout(()=>bridge.close(), 100);
         }, 10);
         self.fire(EVENT_OPEN);
         window.addEventListener('unload', function () { return self.close(); });
@@ -166,7 +165,6 @@ var IENotification = (function (_super) {
         var popup = bridge.showModelessDialog("content.html", self, "dialogWidth:" + width + "px;dialogHeight:" + height + "px;dialogTop:" + top + "px;dialogLeft:" + left + "px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes");
         self._popup = popup;
         self.delayTasks.addRepeatTask('fixDialogPosition', function () { return fixDialogPosition(popup); }, 100);
-        // self.delayTasks.addTask('fixPopupPosition', ()=>syncWindowPosition(bridge, popup), 1000, true);
         self.delayTasks.addTask('closePopup', function () { return self.close(); }, IENotification.timeout);
     };
     IENotification.prototype._initPopup = function (popup) {

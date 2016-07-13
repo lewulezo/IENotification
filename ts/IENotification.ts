@@ -173,7 +173,6 @@ class IENotification extends Observable{
     self._bridge = bridge;
     self.delayTasks.addTask('initBridge', ()=> {
       self._initBridge(bridge);
-      // setTimeout(()=>bridge.close(), 100);
     }, 10);
     
     self.fire(EVENT_OPEN);
@@ -213,7 +212,6 @@ class IENotification extends Observable{
       `dialogWidth:${width}px;dialogHeight:${height}px;dialogTop:${top}px;dialogLeft:${left}px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes`);
     self._popup = popup;
     self.delayTasks.addRepeatTask('fixDialogPosition', ()=>fixDialogPosition(popup), 100);
-    // self.delayTasks.addTask('fixPopupPosition', ()=>syncWindowPosition(bridge, popup), 1000, true);
     self.delayTasks.addTask('closePopup', ()=>self.close(), IENotification.timeout);
   }
 
