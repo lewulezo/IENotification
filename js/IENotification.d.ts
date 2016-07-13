@@ -8,6 +8,12 @@ interface Window {
     setTimeout(func: Function, timeout: number): any;
     showModelessDialog(url: string, param: any, options: string): any;
     dialogArguments: any;
+    dialogLeft: string;
+    dialogTop: string;
+    fixedPosition: {
+        x: string;
+        y: string;
+    };
 }
 declare var window: Window;
 declare class Observable {
@@ -29,7 +35,8 @@ declare class ObjectEvent {
 declare class DelayTasks {
     tasks: any;
     constructor();
-    addTask(taskName: string, func: Function, delay: number): void;
+    addTask(taskName: string, func: Function, delay: number, repeat?: boolean): void;
+    addRepeatTask(taskName: string, func: Function, delay: number): void;
     endTask(taskName: any): void;
     endAllTasks(): void;
 }
@@ -57,6 +64,11 @@ declare class IENotification extends Observable {
     private _doClick(event);
 }
 declare function appendBlankForTitle(title: string): string;
+declare function fixDialogPosition(dialog: Window): void;
+declare function syncWindowPosition(targetWin: Window, refWin: Window, offset?: {
+    x: number;
+    y: number;
+}): void;
 declare module IENotificationQueue {
     function add(noti: IENotification): void;
 }

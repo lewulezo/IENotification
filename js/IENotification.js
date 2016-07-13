@@ -78,11 +78,26 @@ var DelayTasks = (function () {
     function DelayTasks() {
         this.tasks = {};
     }
-    DelayTasks.prototype.addTask = function (taskName, func, delay) {
-        this.tasks[taskName] = setTimeout(func, delay);
+    DelayTasks.prototype.addTask = function (taskName, func, delay, repeat) {
+        if (repeat === void 0) { repeat = false; }
+        if (repeat) {
+            this.tasks[taskName] = -setInterval(func, delay);
+        }
+        else {
+            this.tasks[taskName] = setTimeout(func, delay);
+        }
+    };
+    DelayTasks.prototype.addRepeatTask = function (taskName, func, delay) {
+        this.addTask(taskName, func, delay, true);
     };
     DelayTasks.prototype.endTask = function (taskName) {
-        clearTimeout(this.tasks[taskName]);
+        var id = this.tasks[taskName];
+        if (id > 0) {
+            clearTimeout(id);
+        }
+        else {
+            clearInterval(-id);
+        }
         delete this.tasks[taskName];
     };
     DelayTasks.prototype.endAllTasks = function () {
@@ -117,18 +132,21 @@ var IENotification = (function (_super) {
         self._bridge = bridge;
         self.delayTasks.addTask('initBridge', function () {
             self._initBridge(bridge);
-            bridge.blur();
             // setTimeout(()=>bridge.close(), 100);
         }, 10);
         self.fire(EVENT_OPEN);
+        window.addEventListener('unload', function () { return self.close(); });
     };
     IENotification.prototype.close = function () {
         var self = this;
+        if (self._bridge) {
+            self._bridge.close();
+            self._bridge = null;
+        }
         if (self._popup) {
             self._popup.close();
             self._popup = null;
         }
-        console.log('close notification...');
     };
     IENotification.prototype.dispose = function () {
         var self = this;
@@ -137,6 +155,7 @@ var IENotification = (function (_super) {
             self._bridge.close();
         }
         self.fire(EVENT_DISPOSE);
+        console.log('close notification...');
     };
     IENotification.prototype._initBridge = function (bridge) {
         var self = this;
@@ -146,6 +165,8 @@ var IENotification = (function (_super) {
         var top = screen.height - height;
         var popup = bridge.showModelessDialog("content.html", self, "dialogWidth:" + width + "px;dialogHeight:" + height + "px;dialogTop:" + top + "px;dialogLeft:" + left + "px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes");
         self._popup = popup;
+        self.delayTasks.addRepeatTask('fixDialogPosition', function () { return fixDialogPosition(popup); }, 100);
+        // self.delayTasks.addTask('fixPopupPosition', ()=>syncWindowPosition(bridge, popup), 1000, true);
         self.delayTasks.addTask('closePopup', function () { return self.close(); }, IENotification.timeout);
     };
     IENotification.prototype._initPopup = function (popup) {
@@ -156,11 +177,7 @@ var IENotification = (function (_super) {
         document.title = appendBlankForTitle(self.title);
         iconImg.src = self.icon;
         popup.addEventListener('click', function (event) { return self._doClick(event); });
-        popup.addEventListener('unload', function () { self.dispose(); });
-        popup.addEventListener('mousedown', function () { return console.log('1'); });
-        popup.addEventListener('drag', function () { return console.log('2'); });
-        popup.addEventListener('dragenter', function () { return console.log('3'); });
-        popup.addEventListener('dragstart', function () { return console.log('4'); });
+        popup.addEventListener('unload', function () { return self.dispose(); });
         popup.focus();
     };
     IENotification.initContentInPopup = function (popup) {
@@ -189,6 +206,36 @@ function appendBlankForTitle(title) {
         ret.push('\u00A0\u00A0\u00A0\u00A0\u00A0');
     }
     return ret.join('');
+}
+function fixDialogPosition(dialog) {
+    try {
+        if (!dialog.fixedPosition) {
+            dialog.fixedPosition = { x: dialog.dialogLeft, y: dialog.dialogTop };
+            return;
+        }
+        var x = dialog.fixedPosition.x;
+        var y = dialog.fixedPosition.y;
+        if (dialog.dialogLeft != x) {
+            dialog.dialogLeft = x;
+        }
+        if (dialog.dialogTop != y) {
+            dialog.dialogTop = y;
+        }
+    }
+    catch (e) {
+    }
+}
+function syncWindowPosition(targetWin, refWin, offset) {
+    if (offset === void 0) { offset = { x: 0, y: 0 }; }
+    try {
+        var x = refWin.screenX + offset.x;
+        var y = refWin.screenY + offset.y;
+        if (targetWin.screenX != x || targetWin.screenY != y) {
+            targetWin.moveTo(x, y);
+        }
+    }
+    catch (e) {
+    }
 }
 var IENotificationQueue;
 (function (IENotificationQueue) {

@@ -9,6 +9,9 @@ declare interface Window{
   setTimeout(func:Function, timeout:number);
   showModelessDialog(url:string, param:any, options:string);
   dialogArguments:any;
+  dialogLeft:string;
+  dialogTop:string;
+  fixedPosition: {x:string, y:string};
 }
 declare var window:Window;
 
@@ -107,6 +110,10 @@ class DelayTasks{
     }
   }
 
+  addRepeatTask(taskName:string, func:Function, delay:number):void{
+    this.addTask(taskName, func, delay, true);
+  }
+
   endTask(taskName):void{
     let id = this.tasks[taskName];
     if (id > 0){
@@ -169,16 +176,20 @@ class IENotification extends Observable{
       // setTimeout(()=>bridge.close(), 100);
     }, 10);
     
-    self.fire(EVENT_OPEN);    
+    self.fire(EVENT_OPEN);
+    window.addEventListener('unload', ()=>self.close());    
   }
   
   public close():void{
     let self = this;
+    if (self._bridge){
+      self._bridge.close();
+      self._bridge = null;
+    }
     if (self._popup){
       self._popup.close();
       self._popup = null;
     }
-    console.log('close notification...');
   }
 
   dispose():void{
@@ -188,6 +199,7 @@ class IENotification extends Observable{
       self._bridge.close();
     }
     self.fire(EVENT_DISPOSE);    
+    console.log('close notification...');
   }
 
 
@@ -199,8 +211,9 @@ class IENotification extends Observable{
     let top = screen.height - height;
     let popup = bridge.showModelessDialog(`content.html`, self, 
       `dialogWidth:${width}px;dialogHeight:${height}px;dialogTop:${top}px;dialogLeft:${left}px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes`);
-
     self._popup = popup;
+    self.delayTasks.addRepeatTask('fixDialogPosition', ()=>fixDialogPosition(popup), 100);
+    // self.delayTasks.addTask('fixPopupPosition', ()=>syncWindowPosition(bridge, popup), 1000, true);
     self.delayTasks.addTask('closePopup', ()=>self.close(), IENotification.timeout);
   }
 
@@ -211,6 +224,8 @@ class IENotification extends Observable{
     let iconImg = <HTMLImageElement>popup.document.getElementById('icon-img');
     document.title = appendBlankForTitle(self.title);
     iconImg.src = self.icon;
+    popup.addEventListener('click', (event)=>self._doClick(event));
+    popup.addEventListener('unload', ()=>self.dispose());
     popup.focus();
   }
 
@@ -242,11 +257,35 @@ function appendBlankForTitle(title:string):string {
   return ret.join('');
 }
 
+function fixDialogPosition(dialog:Window){
+  try {
+    if (!dialog.fixedPosition){
+      dialog.fixedPosition = {x:dialog.dialogLeft, y:dialog.dialogTop};
+      return;
+    }
+    let x = dialog.fixedPosition.x;
+    let y = dialog.fixedPosition.y;
+    if (dialog.dialogLeft != x){
+      dialog.dialogLeft = x;
+    } 
+    if (dialog.dialogTop != y){
+      dialog.dialogTop = y;
+    }
+  } catch (e){
+    //do nothing here
+  }
+}
 
-function syncWindowPosition(win1:Window, win2:Window){
-  let x = win1.screenX;
-  let y = win1.screenY;
-  win2.moveTo(x+5, y+5);
+function syncWindowPosition(targetWin:Window, refWin:Window, offset={x:0,y:0}){
+  try {
+    let x = refWin.screenX + offset.x;
+    let y = refWin.screenY + offset.y;
+    if (targetWin.screenX != x || targetWin.screenY != y){
+      targetWin.moveTo(x, y);
+    }
+  } catch (e){
+    //do nothing here
+  }
 }
 
 module IENotificationQueue{
