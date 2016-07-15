@@ -1,33 +1,72 @@
-@notification-icon-width: 90px;
-@notification-icon-height: 90px;
-@notification-height: 120px;
-
+@notification-full-width:  360px;
+@notification-full-height: 90px;
+@body-padding: 0;
+@notification-width:  @notification-full-width - @body-padding;
+@notification-height: @notification-full-height - @body-padding;
+@icon-width:           60px;
+@icon-height:          60px;
+@icon-padding:         15px;
+@text-padding:         15px;
+@title-height:         35px;
+@body-height:          @notification-height - @title-height;
+@icon-div-width:       @icon-width + @icon-padding * 2;
+@content-div-width:    @notification-width - @icon-div-width;
+@font-family:          Arial, Helvetica, sans-serif;
+@title-font-size:      16px;
+@body-font-size:       13px;
 
 body{
-  padding: 0;
+  padding: @body-padding;
   margin: 0;
   cursor: pointer;
 
-  #content-div:extend(.common-block) {
+  #noti-div:extend(.common-block) {
+    font-family: @font-family;
+    width:  @notification-width;
+    height: @notification-height;
+
     #icon-div:extend(.common-block) {
-      width:@notification-icon-width;
+      height: @notification-height;
+      width:  @icon-div-width;
       img#icon-img {
-        padding: (@notification-height - @notification-icon-height) / 2;
-        width: @notification-icon-width;
-        height: @notification-icon-height;
+        top:     0;
+        padding: @icon-padding;
+        width:   @icon-width;
+        height:  @icon-height;
       }
     }
 
-    #body-div:extend(.common-block) {
-      padding-top: 20px;
-      left: @notification-icon-width + 30;
-      font-family: Arial, Helvetica, sans-serif; 
+    #content-div:extend(.common-block) {
+      height:  @notification-height;
+      width:   @content-div-width;
+      left:    @icon-div-width;
+      #title-div:extend(.common-block){
+        top: 0;
+        padding-top:   @text-padding;
+        padding-left:  @text-padding;
+        padding-right: @text-padding;
+        height:        @title-height;
+        width:         @content-div-width - @text-padding * 2;
+        font-size:     @title-font-size;
+        font-weight:   bold;
+        white-space:   nowrap;
+        text-overflow: ellipsis;
+      } 
+      #body-div:extend(.common-block){
+        top:           @title-height;
+        padding-left:  @text-padding;
+        padding-right: @text-padding;
+        height:        @body-height - @text-padding;
+        width:         @content-div-width - @text-padding * 2;
+        font-size:     @body-font-size;
+        // word-break:    break-all;
+        // word-wrap:     break-word;
+        text-overflow: ellipsis;
+      }
     }
   }
 }
 
 .common-block {
   position: absolute;
-  width: 100%;
-  height: @notification-height;
 }

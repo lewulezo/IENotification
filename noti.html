@@ -5,16 +5,62 @@
   <body >
     <script>
       function test(){
+        var title = document.getElementById('noti-title').value;
+        var body = document.getElementById('noti-body').value;
+        var data = document.getElementById('noti-data').value;
+        var icon = document.getElementById('noti-icon').value;
+
         Notification.requestPermission(function(permission){
-          new Notification('test', {
-            body: 'this is a test body',
-            data: 'this is a test data',
-            icon: 'msg_info.png'
+          new Notification(title, {
+            body: body,
+            data: data,
+            icon: icon
           });
         });
       }
     </script>
     <script src="js/IENotification.js"></script>
-    <button id='test' onclick="test()">test</button>
+    <script>
+      Notification.notificationPath = '';
+    </script>
+    <table>
+      <tr>
+        <td>
+          <label for="noti-title">title:</label>
+        </td>
+        <td>
+          <input type="text" id="noti-title" value="Notification">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label for="noti-body">body:</label>
+        </td>
+        <td>
+          <textarea id='noti-body'>Test body text</textarea>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label for="noti-data">data:</label>
+        </td>
+        <td>
+          <textarea id='noti-data'>Text data text</textarea>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label for="noti-icon">title:</label>
+        </td>
+        <td>
+          <input type="text" id="noti-icon" value="msg_info.png">
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <button id='test' onclick="test()">test</button>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>

@@ -127,11 +127,11 @@ var ienotification;
         }
         IENotification.prototype.show = function () {
             var self = this;
-            var height = 120;
-            var width = screen.width * 0.2;
-            var left = screen.width - width;
+            var height = IENotification.notificationHeight - 5;
+            var width = IENotification.notificationHeight - 5;
+            var left = screen.width - IENotification.notificationWidth - IENotification.notificationEdge;
             var top = screen.height - height;
-            var bridge = window.open(IENotification.rootPath + "/IENotification/bridge.html", self.title, "width=" + width + ",height=" + height + ",top=" + top + ",left=" + left + ",center=0,resizable=0,scroll=0,status=0,location=0");
+            var bridge = window.open(IENotification.notificationPath + "bridge.html", self.title, "width=" + width + ",height=" + height + ",top=" + top + ",left=" + left + ",center=0,resizable=0,scroll=0,status=0,location=0");
             self._bridge = bridge;
             self.delayTasks.addTask('initBridge', function () {
                 self._initBridge(bridge);
@@ -161,9 +161,9 @@ var ienotification;
         };
         IENotification.prototype._initBridge = function (bridge) {
             var self = this;
-            var height = 120 + 5;
-            var width = screen.width * 0.2 + 5;
-            var left = screen.width - width;
+            var height = IENotification.notificationHeight + IENotification.notificationEdge;
+            var width = IENotification.notificationWidth + IENotification.notificationEdge;
+            var left = screen.width - IENotification.notificationWidth;
             var top = screen.height - height;
             var popup = bridge.showModelessDialog("content.html", self, "dialogWidth:" + width + "px;dialogHeight:" + height + "px;dialogTop:" + top + "px;dialogLeft:" + left + "px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes");
             self._popup = popup;
@@ -172,10 +172,12 @@ var ienotification;
         };
         IENotification.prototype._initPopup = function (popup) {
             var self = this;
+            var titleDiv = popup.document.getElementById('title-div');
+            titleDiv.innerHTML = self.title;
             var bodyDiv = popup.document.getElementById('body-div');
             bodyDiv.innerText = self.body;
             var iconImg = popup.document.getElementById('icon-img');
-            document.title = appendBlankForTitle(self.title);
+            popup.document.title = appendBlankForTitle('');
             iconImg.src = IENotification.rootPath + self.icon;
             popup.addEventListener('click', function (event) { return self._doClick(event); });
             popup.addEventListener('unload', function () { return self.dispose(); });
@@ -198,7 +200,11 @@ var ienotification;
             window.focus();
         };
         IENotification.timeout = 20000;
+        IENotification.notificationHeight = 90;
+        IENotification.notificationWidth = 360;
+        IENotification.notificationEdge = 20;
         IENotification.rootPath = getDefaultRootPath();
+        IENotification.notificationPath = IENotification.rootPath + 'IENotification/';
         return IENotification;
     }(Observable));
     function appendBlankForTitle(title) {

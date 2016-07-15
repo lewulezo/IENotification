@@ -147,7 +147,11 @@ module ienotification{
     delayTasks: DelayTasks;
 
     static timeout = 20000;
+    public static notificationHeight = 90;
+    public static notificationWidth = 360;
+    public static notificationEdge = 20;
     public static rootPath = getDefaultRootPath();
+    public static notificationPath = IENotification.rootPath + 'IENotification/';
 
     constructor(title:string, options){
       super();
@@ -164,11 +168,11 @@ module ienotification{
 
     show():void{
       let self = this;
-      let height = 120;
-      let width = screen.width * 0.2;
-      let left = screen.width - width;
+      let height = IENotification.notificationHeight - 5;
+      let width = IENotification.notificationHeight - 5;
+      let left = screen.width - IENotification.notificationWidth -IENotification.notificationEdge;
       let top = screen.height - height;
-      let bridge:Window = window.open(`${IENotification.rootPath}/IENotification/bridge.html`, self.title, 
+      let bridge:Window = window.open(`${IENotification.notificationPath}bridge.html`, self.title, 
       `width=${width},height=${height},top=${top},left=${left},center=0,resizable=0,scroll=0,status=0,location=0`);
 
       self._bridge = bridge;
@@ -205,9 +209,9 @@ module ienotification{
 
     private _initBridge(bridge:Window){
       let self = this;
-      let height = 120 + 5;
-      let width = screen.width * 0.2 + 5;
-      let left = screen.width - width;
+      let height = IENotification.notificationHeight + IENotification.notificationEdge;
+      let width = IENotification.notificationWidth + IENotification.notificationEdge;
+      let left = screen.width - IENotification.notificationWidth;
       let top = screen.height - height;
       let popup = bridge.showModelessDialog(`content.html`, self, 
         `dialogWidth:${width}px;dialogHeight:${height}px;dialogTop:${top}px;dialogLeft:${left}px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes`);
@@ -218,10 +222,12 @@ module ienotification{
 
     private _initPopup(popup:Window){
       let self = this;
+      let titleDiv = popup.document.getElementById('title-div');
+      titleDiv.innerHTML = self.title;
       let bodyDiv = popup.document.getElementById('body-div');
       bodyDiv.innerText = self.body;
       let iconImg = <HTMLImageElement>popup.document.getElementById('icon-img');
-      popup.document.title = appendBlankForTitle(self.title);
+      popup.document.title = appendBlankForTitle('');
       iconImg.src = IENotification.rootPath + self.icon;
       popup.addEventListener('click', (event)=>self._doClick(event));
       popup.addEventListener('unload', ()=>self.dispose());
