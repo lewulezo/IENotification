@@ -151,7 +151,8 @@ module ienotification{
     public static notificationWidth = 360;
     public static notificationEdge = 20;
     public static rootPath = getDefaultRootPath();
-    public static notificationPath = IENotification.rootPath + 'IENotification/';
+    public static ieNotificationPath = 'IENotification';
+    public static notificationPath = IENotification.rootPath + IENotification.ieNotificationPath + '/';
 
     constructor(title:string, options){
       super();
