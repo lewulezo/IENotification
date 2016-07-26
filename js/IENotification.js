@@ -178,7 +178,7 @@ var ienotification;
             bodyDiv.innerText = self.body;
             var iconImg = popup.document.getElementById('icon-img');
             popup.document.title = appendBlankForTitle('');
-            iconImg.src = IENotification.rootPath + self.icon;
+            iconImg.src = IENotification.basePath + self.icon;
             popup.addEventListener('click', function (event) { return self._doClick(event); });
             popup.addEventListener('unload', function () { return self.dispose(); });
             popup.focus();
@@ -188,7 +188,14 @@ var ienotification;
         };
         //We don't need to implement this, just compatible with formal API
         IENotification.requestPermission = function (callback) {
-            callback('granted');
+            if (callback && callback instanceof Function) {
+                callback('granted');
+            }
+            else {
+                return new Promise(function (res, rej) {
+                    res('granted');
+                });
+            }
         };
         IENotification.prototype._doClick = function (event) {
             var self = this;
@@ -203,8 +210,6 @@ var ienotification;
         IENotification.notificationHeight = 90;
         IENotification.notificationWidth = 360;
         IENotification.notificationEdge = 20;
-        IENotification.rootPath = getDefaultRootPath();
-        IENotification.notificationPath = IENotification.rootPath + 'IENotification/';
         return IENotification;
     }(Observable));
     function appendBlankForTitle(title) {
@@ -288,6 +293,8 @@ var ienotification;
         var path = urlStr.substr(0, urlStr.length - queryStr.length);
         return path.substring(0, path.lastIndexOf('/')) + '/';
     }
+    IENotification.basePath = getDefaultRootPath();
+    IENotification.notificationPath = IENotification.basePath + "IENotification/";
     if (!window.Notification) {
         window.Notification = window.IENotification = IENotification;
     }

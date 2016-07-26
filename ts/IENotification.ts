@@ -14,6 +14,10 @@ declare interface Window{
   dialogTop:string;
   fixedPosition: {x:string, y:string};
 }
+declare class Promise<T>{
+  constructor(callback:(resolve:(T)=>void, reject:Function)=>void);
+}
+
 declare var window:Window;
 
 module ienotification{
@@ -147,12 +151,11 @@ module ienotification{
     delayTasks: DelayTasks;
 
     static timeout = 20000;
+    public static basePath;
+    public static notificationPath;
     public static notificationHeight = 90;
     public static notificationWidth = 360;
     public static notificationEdge = 20;
-    public static rootPath = getDefaultRootPath();
-    public static ieNotificationPath = 'IENotification';
-    public static notificationPath = IENotification.rootPath + IENotification.ieNotificationPath + '/';
 
     constructor(title:string, options){
       super();
@@ -229,7 +232,7 @@ module ienotification{
       bodyDiv.innerText = self.body;
       let iconImg = <HTMLImageElement>popup.document.getElementById('icon-img');
       popup.document.title = appendBlankForTitle('');
-      iconImg.src = IENotification.rootPath + self.icon;
+      iconImg.src = IENotification.basePath + self.icon;
       popup.addEventListener('click', (event)=>self._doClick(event));
       popup.addEventListener('unload', ()=>self.dispose());
       popup.focus();
@@ -241,8 +244,15 @@ module ienotification{
 
     //We don't need to implement this, just compatible with formal API
     static requestPermission(callback:Function){
-      callback('granted');
+      if (callback && callback instanceof Function){
+        callback('granted');
+      } else {
+        return new Promise<string>((res, rej)=>{
+          res('granted');
+        });
+      }
     }
+
 
     private _doClick(event:Event){
       let self:IENotification = this;
@@ -341,6 +351,8 @@ module ienotification{
     return path.substring(0, path.lastIndexOf('/')) + '/';
   }
 
+  IENotification.basePath = getDefaultRootPath();
+  IENotification.notificationPath = IENotification.basePath + "IENotification/";
 
   if (!window.Notification){
     window.Notification = window.IENotification= IENotification;

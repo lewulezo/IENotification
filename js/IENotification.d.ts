@@ -16,6 +16,9 @@ interface Window {
         y: string;
     };
 }
+declare class Promise<T> {
+    constructor(callback: (resolve: (T) => void, reject: Function) => void);
+}
 declare var window: Window;
 declare module ienotification {
 }
