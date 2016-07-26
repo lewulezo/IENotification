@@ -232,7 +232,8 @@ module ienotification{
       bodyDiv.innerText = self.body;
       let iconImg = <HTMLImageElement>popup.document.getElementById('icon-img');
       popup.document.title = appendBlankForTitle('');
-      iconImg.src = IENotification.basePath + self.icon;
+      iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
+
       popup.addEventListener('click', (event)=>self._doClick(event));
       popup.addEventListener('unload', ()=>self.dispose());
       popup.focus();
