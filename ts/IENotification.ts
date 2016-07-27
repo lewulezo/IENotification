@@ -35,7 +35,7 @@ const EVENT_OPEN = 'OPEN';
 const EVENT_DISPOSE = 'DISPOSE';
 
 
-class IENotification extends Observable{
+export default class IENotification extends Observable{
   title: string;
   body: string;
   icon: string;
