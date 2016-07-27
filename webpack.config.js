@@ -1,8 +1,8 @@
 module.exports = {  
-  entry: ['ts/utils.ts'],
+  entry: ['./ts/IENotification.ts'],
   output: {
-    path: "js/",
-    filename: 'ie-noti.js'
+    path: "",
+    filename: 'IENotification.js'
   },
   resolve: {
     extensions: ['', '.webpack.js', '.web.js', '.ts', '.js']
@@ -10,7 +10,7 @@ module.exports = {
   devtool: 'source-map',
   module: {
     loaders: [
-      { test: /\.ts$/, loader: 'awesome-typescript-loader' }
+      { test: /\.ts$/, loader: 'ts-loader' }
     ]
   }
 }

@@ -1,163 +1,39 @@
 'use strict';
-declare interface Window{
-  open(url?: string, target?: string, features?: string, replace?: boolean): Window;
+
+import Position from './Position';
+import Observable from './Observable';
+import DelayTasks from './DelayTasks';
+
+declare interface IWindow extends Window{
+  open(url?: string, target?: string, features?: string, replace?: boolean): IWindow;
   close();
   focus();
-  addEventListener(eventName:string, handler:Function);
+//  addEventListener(eventName:string, handler:Function);
   Notification;
   IENotification;
   showModalDialog(dialog:string, varArgIn, varOptions);
   setTimeout(func:Function, timeout:number);
   showModelessDialog(url:string, param:any, options:string): Dialog;
-  lastPosition: ienotification.Position;
+  lastPosition: Position;
 }
 
 
-declare interface Dialog extends Window{
+declare interface Dialog extends IWindow{
   dialogArguments:any;
   dialogLeft:string;
   dialogTop:string;
   dialogHeight:string;
   dialogWidth:string;
-  fixedPosition: ienotification.Position;
+  fixedPosition: Position;
 }
 
 declare class Promise<T>{
   constructor(callback:(resolve:(T)=>void, reject:Function)=>void);
 }
 
-declare var window:Window;
+declare var window:IWindow;
 
 module ienotification{
-  export class Position{
-    x:number;
-    y:number;
-    w:number;
-    h:number;
-    constructor({x=0, y=0, w=0, h=0}){
-      this.x = x;
-      this.y = y;
-      this.w = w;
-      this.h = h;
-    }
-    equals(pos:Position):boolean{
-      return this.x == pos.x && this.y == pos.y && this.w == pos.w && this.h == pos.h;
-    }
-  }
-
-  class Observable{
-    private listeners;
-    constructor(){
-      let self = this;
-      self.listeners = {};
-      self.addEventListener.bind(self);
-      self.removeEventListener.bind(self);
-      self.dispatchEvent.bind(self);
-      self.fire.bind(self);
-      self.on.bind(self);
-      self.un.bind(self);
-    }
-
-    addEventListener(eventName:string, func:Function){
-      let handlers:Function[] = this.listeners[eventName];
-      if (handlers){
-        handlers.push(func);
-      } else {
-        handlers = [func];
-        this.listeners[eventName] = handlers;
-      }
-    }
-
-    removeEventListener(eventName, func: Function){
-      let handlers:Function[] = this.listeners[eventName];
-      if (handlers){
-        let index = handlers.indexOf(func);
-        if (index > -1){
-          handlers.splice(index, 1);
-        }
-      }
-    }
-
-    dispatchEvent(eventName:string){
-      let self = this;
-      let handlers: Function[] = self.listeners[eventName];
-      let evt = new ObjectEvent(eventName);
-      if (handlers){
-        handlers.some(func=>{
-          try {
-            func.call(self, evt);
-            if (evt.stop){
-              return true;
-            }
-          } catch (error){
-            console.log(`Error in dispatchEvent ${eventName}...${error.message}`)
-            if (evt.stopWhenError){
-              return true;
-            }
-          }
-        })
-      }
-    }
-
-    fire(eventName:string){
-      this.dispatchEvent(eventName);
-    }
-
-    on(eventName:string, func:Function){
-      this.addEventListener(eventName, func);
-    }
-
-    un(eventName:string, func:Function){
-      this.removeEventListener(eventName, func);
-    }
-  }
-
-  class ObjectEvent{
-    name:string;
-    stop:boolean;
-    stopWhenError:boolean;
-
-    constructor(name){
-      this.name = name;
-      this.stop = false;
-      this.stopWhenError = true;
-    }
-  }
-
-  class DelayTasks{
-    tasks;
-
-    constructor(){
-      this.tasks = {};
-    }
-
-    addTask(taskName:string, func:Function, delay:number, repeat=false):void{
-      if (repeat){
-        this.tasks[taskName] = - setInterval(func, delay);
-      } else {
-        this.tasks[taskName] = setTimeout(func, delay);
-      }
-    }
-
-    addRepeatTask(taskName:string, func:Function, delay:number):void{
-      this.addTask(taskName, func, delay, true);
-    }
-
-    endTask(taskName):void{
-      let id = this.tasks[taskName];
-      if (id > 0){
-        clearTimeout(id);
-      } else {
-        clearInterval(-id);
-      }
-      delete this.tasks[taskName];
-    }
-
-    endAllTasks(){
-      Object.keys(this.tasks).forEach(taskName=>this.endTask(taskName));
-    }
-  }
-
   //-------------------------------------------------------------------------------
 
   const EVENT_OPEN = 'OPEN';
@@ -203,7 +79,7 @@ module ienotification{
       let width = IENotification.notificationWidth;
       let left = screen.width - width;
       let top = screen.height - height;
-      let bridge:Window = window.open(`${IENotification.notificationPath}bridge.html`, self.title, 
+      let bridge:IWindow = window.open(`${IENotification.notificationPath}bridge.html`, self.title, 
       `width=${width},height=${height},top=${top},left=${left},center=0,resizable=0,scroll=0,status=0,location=0`);
 
       self._bridge = bridge;
@@ -245,7 +121,7 @@ module ienotification{
     }
 
 
-    private _initBridge(bridge:Window){
+    private _initBridge(bridge:IWindow){
       let self = this;
       let height = IENotification.notificationHeight + IENotification.edgeY;
       let width = IENotification.notificationWidth + IENotification.edgeX;
@@ -368,7 +244,7 @@ module ienotification{
     }
   }
 
-  function hideWindowBehindDialog(wnd:Window, dialog:Dialog){
+  function hideWindowBehindDialog(wnd:IWindow, dialog:Dialog){
     if (!dialog){
       return;
     }

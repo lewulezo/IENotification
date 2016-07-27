@@ -5,6 +5,7 @@
   "description": "HTML5 browser notification implement for IE11",
   "devDependencies": {
     "less": "~2.7.1",
+    "ts-loader": "~0.8.2",
     "typescript": "~1.8.10"
   }
 }
