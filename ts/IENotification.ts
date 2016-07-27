@@ -8,12 +8,20 @@ declare interface Window{
   IENotification;
   showModalDialog(dialog:string, varArgIn, varOptions);
   setTimeout(func:Function, timeout:number);
-  showModelessDialog(url:string, param:any, options:string);
+  showModelessDialog(url:string, param:any, options:string): Dialog;
+  lastPosition: ienotification.Position;
+}
+
+
+declare interface Dialog extends Window{
   dialogArguments:any;
   dialogLeft:string;
   dialogTop:string;
-  fixedPosition: {x:string, y:string};
+  dialogHeight:string;
+  dialogWidth:string;
+  fixedPosition: ienotification.Position;
 }
+
 declare class Promise<T>{
   constructor(callback:(resolve:(T)=>void, reject:Function)=>void);
 }
@@ -21,6 +29,22 @@ declare class Promise<T>{
 declare var window:Window;
 
 module ienotification{
+  export class Position{
+    x:number;
+    y:number;
+    w:number;
+    h:number;
+    constructor({x=0, y=0, w=0, h=0}){
+      this.x = x;
+      this.y = y;
+      this.w = w;
+      this.h = h;
+    }
+    equals(pos:Position):boolean{
+      return this.x == pos.x && this.y == pos.y && this.w == pos.w && this.h == pos.h;
+    }
+  }
+
   class Observable{
     private listeners;
     constructor(){
@@ -146,7 +170,7 @@ module ienotification{
     icon: string;
     data: string;
     onclick: Function;
-    private _popup: Window;
+    private _popup: Dialog;
     private _bridge: Window;
     delayTasks: DelayTasks;
 
@@ -155,7 +179,8 @@ module ienotification{
     public static notificationPath;
     public static notificationHeight = 90;
     public static notificationWidth = 360;
-    public static notificationEdge = 20;
+    public static edgeX = 0;
+    public static edgeY = 0;
 
     constructor(title:string, options){
       super();
@@ -172,12 +197,15 @@ module ienotification{
 
     show():void{
       let self = this;
-      let height = IENotification.notificationHeight - 5;
-      let width = IENotification.notificationHeight - 5;
-      let left = screen.width - IENotification.notificationWidth -IENotification.notificationEdge;
+      let height = IENotification.notificationHeight;
+      let width = IENotification.notificationWidth;
+      let left = screen.width - width;
       let top = screen.height - height;
       let bridge:Window = window.open(`${IENotification.notificationPath}bridge.html`, self.title, 
       `width=${width},height=${height},top=${top},left=${left},center=0,resizable=0,scroll=0,status=0,location=0`);
+
+      IENotification.edgeX = bridge.screenLeft - left;
+      IENotification.edgeY = bridge.screenTop - top;
 
       self._bridge = bridge;
       self.delayTasks.addTask('initBridge', ()=> {
@@ -213,18 +241,20 @@ module ienotification{
 
     private _initBridge(bridge:Window){
       let self = this;
-      let height = IENotification.notificationHeight + IENotification.notificationEdge;
-      let width = IENotification.notificationWidth + IENotification.notificationEdge;
-      let left = screen.width - IENotification.notificationWidth;
+      let height = IENotification.notificationHeight + IENotification.edgeY;
+      let width = IENotification.notificationWidth + IENotification.edgeX;
+      let left = screen.width - width;
       let top = screen.height - height;
+
       let popup = bridge.showModelessDialog(`content.html`, self, 
         `dialogWidth:${width}px;dialogHeight:${height}px;dialogTop:${top}px;dialogLeft:${left}px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes`);
       self._popup = popup;
-      self.delayTasks.addRepeatTask('fixDialogPosition', ()=>fixDialogPosition(popup), 100);
+      // self.delayTasks.addRepeatTask('fixDialogPosition', ()=>fixDialogPosition(popup), 100);
+      self.delayTasks.addRepeatTask('fixBridgePosition', ()=>hideWindowBehindDialog(bridge, popup), 100);
       self.delayTasks.addTask('closePopup', ()=>self.close(), IENotification.timeout);
     }
 
-    private _initPopup(popup:Window){
+    private _initPopup(popup:Dialog){
       let self = this;
       let titleDiv = popup.document.getElementById('title-div');
       titleDiv.innerHTML = self.title;
@@ -235,11 +265,12 @@ module ienotification{
       iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
 
       popup.addEventListener('click', (event)=>self._doClick(event));
+      popup.addEventListener('blur', ()=>self.dispose());
       popup.addEventListener('unload', ()=>self.dispose());
       popup.focus();
     }
 
-    static initContentInPopup(popup:Window){
+    static initContentInPopup(popup:Dialog){
       popup.dialogArguments._initPopup(popup);
     }
 
@@ -266,6 +297,26 @@ module ienotification{
     }
   }
 
+  function getDialogPosition(dialog:Dialog):Position{
+    return new Position({
+      x: pxToNumber(dialog.dialogLeft),
+      y: pxToNumber(dialog.dialogTop),
+      w: pxToNumber(dialog.dialogWidth),
+      h: pxToNumber(dialog.dialogHeight)
+    });
+  }
+
+  function setDialogPosition(dialog:Dialog, pos:Position):void{
+    if (getDialogPosition(dialog).equals(pos)){
+      return;
+    }
+    dialog.dialogLeft = numberToPx(pos.x);
+    dialog.dialogTop = numberToPx(pos.y);
+    dialog.dialogWidth = numberToPx(pos.w);
+    dialog.dialogHeight = numberToPx(pos.h);
+  }
+
+  
   function appendBlankForTitle(title:string):string {
     let ret = [title];
     for (let i = 0; i < 40; i++) {
@@ -274,23 +325,47 @@ module ienotification{
     return ret.join('');
   }
 
-  function fixDialogPosition(dialog:Window){
+  function fixDialogPosition(dialog:Dialog):void{
+    if (!dialog){
+      return;
+    }
     try {
       if (!dialog.fixedPosition){
-        dialog.fixedPosition = {x:dialog.dialogLeft, y:dialog.dialogTop};
+        dialog.fixedPosition = getDialogPosition(dialog);
         return;
       }
-      let x = dialog.fixedPosition.x;
-      let y = dialog.fixedPosition.y;
-      if (dialog.dialogLeft != x){
-        dialog.dialogLeft = x;
-      } 
-      if (dialog.dialogTop != y){
-        dialog.dialogTop = y;
-      }
+      setDialogPosition(dialog, dialog.fixedPosition);
     } catch (e){
       //do nothing here
     }
+  }
+
+  function hideWindowBehindDialog(wnd:Window, dialog:Dialog){
+    if (!dialog){
+      return;
+    }
+    try {
+      let dialogPos = getDialogPosition(dialog);
+      if (wnd.lastPosition && wnd.lastPosition.equals(dialogPos)){
+        return;
+      }
+      wnd.moveTo(dialogPos.x + 20, dialogPos.y + 20);
+      wnd.resizeTo(dialogPos.w - 20, dialogPos.h - 20);
+      wnd.lastPosition = dialogPos;
+    } catch(e){
+      //do nothing here
+    }
+  }
+
+  function pxToNumber(str:string):number{
+    if (str.length < 2){
+      return 0;
+    }
+    return Number(str.substring(0, str.length - 2));
+  }
+
+  function numberToPx(num:number):string{
+    return num + 'px';
   }
 
   module IENotificationQueue{

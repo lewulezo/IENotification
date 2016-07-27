@@ -7,18 +7,33 @@ interface Window {
     IENotification: any;
     showModalDialog(dialog: string, varArgIn: any, varOptions: any): any;
     setTimeout(func: Function, timeout: number): any;
-    showModelessDialog(url: string, param: any, options: string): any;
+    showModelessDialog(url: string, param: any, options: string): Dialog;
+    lastPosition: ienotification.Position;
+}
+interface Dialog extends Window {
     dialogArguments: any;
     dialogLeft: string;
     dialogTop: string;
-    fixedPosition: {
-        x: string;
-        y: string;
-    };
+    dialogHeight: string;
+    dialogWidth: string;
+    fixedPosition: ienotification.Position;
 }
 declare class Promise<T> {
     constructor(callback: (resolve: (T) => void, reject: Function) => void);
 }
 declare var window: Window;
 declare module ienotification {
+    class Position {
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+        constructor({x, y, w, h}: {
+            x?: number;
+            y?: number;
+            w?: number;
+            h?: number;
+        });
+        equals(pos: Position): boolean;
+    }
 }
