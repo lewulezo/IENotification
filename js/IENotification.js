@@ -137,6 +137,7 @@ var ienotification;
                 self.data = options.data;
             }
             self.delayTasks = new DelayTasks();
+            self.closed = false;
             IENotificationQueue.add(self);
         }
         IENotification.prototype.show = function () {
@@ -146,8 +147,8 @@ var ienotification;
             var left = screen.width - width;
             var top = screen.height - height;
             var bridge = window.open(IENotification.notificationPath + "bridge.html", self.title, "width=" + width + ",height=" + height + ",top=" + top + ",left=" + left + ",center=0,resizable=0,scroll=0,status=0,location=0");
-            IENotification.edgeX = bridge.screenLeft - left;
-            IENotification.edgeY = bridge.screenTop - top;
+            // IENotification.edgeX = bridge.screenLeft - left;
+            // IENotification.edgeY = bridge.screenTop - top;
             self._bridge = bridge;
             self.delayTasks.addTask('initBridge', function () {
                 self._initBridge(bridge);
@@ -157,6 +158,9 @@ var ienotification;
         };
         IENotification.prototype.close = function () {
             var self = this;
+            if (self.closed) {
+                return;
+            }
             if (self._bridge) {
                 self._bridge.close();
                 self._bridge = null;
@@ -168,11 +172,15 @@ var ienotification;
         };
         IENotification.prototype.dispose = function () {
             var self = this;
+            if (self.closed) {
+                return;
+            }
             this.delayTasks.endAllTasks();
             if (self._bridge) {
                 self._bridge.close();
             }
             self.fire(EVENT_DISPOSE);
+            self.closed = true;
             console.log('close notification...');
         };
         IENotification.prototype._initBridge = function (bridge) {
@@ -184,7 +192,10 @@ var ienotification;
             var popup = bridge.showModelessDialog("content.html", self, "dialogWidth:" + width + "px;dialogHeight:" + height + "px;dialogTop:" + top + "px;dialogLeft:" + left + "px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes");
             self._popup = popup;
             // self.delayTasks.addRepeatTask('fixDialogPosition', ()=>fixDialogPosition(popup), 100);
+            setDialogPosition(popup, getDialogPosition(popup));
+            bridge.addEventListener('unload', function () { return self.close(); });
             self.delayTasks.addRepeatTask('fixBridgePosition', function () { return hideWindowBehindDialog(bridge, popup); }, 100);
+            self.delayTasks.addRepeatTask('hideDialogAfterMove', function () { return onDialogMoved(popup, function () { return self.close(); }); }, 100);
             self.delayTasks.addTask('closePopup', function () { return self.close(); }, IENotification.timeout);
         };
         IENotification.prototype._initPopup = function (popup) {
@@ -197,9 +208,9 @@ var ienotification;
             popup.document.title = appendBlankForTitle('');
             iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
             popup.addEventListener('click', function (event) { return self._doClick(event); });
-            popup.addEventListener('blur', function () { return self.dispose(); });
             popup.addEventListener('unload', function () { return self.dispose(); });
             popup.focus();
+            // popup.addEventListener('blur', ()=>self.delayTasks.addTask('blurToDispose', ()=>self.dispose(), 100));
         };
         IENotification.initContentInPopup = function (popup) {
             popup.dialogArguments._initPopup(popup);
@@ -227,8 +238,8 @@ var ienotification;
         IENotification.timeout = 20000;
         IENotification.notificationHeight = 90;
         IENotification.notificationWidth = 360;
-        IENotification.edgeX = 0;
-        IENotification.edgeY = 0;
+        IENotification.edgeX = 5;
+        IENotification.edgeY = 20;
         return IENotification;
     }(Observable));
     function getDialogPosition(dialog) {
@@ -265,6 +276,24 @@ var ienotification;
                 return;
             }
             setDialogPosition(dialog, dialog.fixedPosition);
+        }
+        catch (e) {
+        }
+    }
+    function onDialogMoved(dialog, handler) {
+        if (!dialog) {
+            return;
+        }
+        try {
+            var pos = getDialogPosition(dialog);
+            if (!dialog.lastPosition) {
+                dialog.lastPosition = pos;
+                return;
+            }
+            if (dialog.lastPosition.equals(pos)) {
+                return;
+            }
+            handler();
         }
         catch (e) {
         }

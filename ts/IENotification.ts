@@ -173,14 +173,15 @@ module ienotification{
     private _popup: Dialog;
     private _bridge: Window;
     delayTasks: DelayTasks;
+    closed: boolean;
 
     static timeout = 20000;
     public static basePath;
     public static notificationPath;
     public static notificationHeight = 90;
     public static notificationWidth = 360;
-    public static edgeX = 0;
-    public static edgeY = 0;
+    public static edgeX = 5;
+    public static edgeY = 20;
 
     constructor(title:string, options){
       super();
@@ -192,6 +193,7 @@ module ienotification{
         self.data = options.data;
       }
       self.delayTasks = new DelayTasks();
+      self.closed = false;
       IENotificationQueue.add(self);
     }
 
@@ -204,9 +206,6 @@ module ienotification{
       let bridge:Window = window.open(`${IENotification.notificationPath}bridge.html`, self.title, 
       `width=${width},height=${height},top=${top},left=${left},center=0,resizable=0,scroll=0,status=0,location=0`);
 
-      IENotification.edgeX = bridge.screenLeft - left;
-      IENotification.edgeY = bridge.screenTop - top;
-
       self._bridge = bridge;
       self.delayTasks.addTask('initBridge', ()=> {
         self._initBridge(bridge);
@@ -218,6 +217,9 @@ module ienotification{
     
     public close():void{
       let self = this;
+      if (self.closed){
+        return;        
+      }
       if (self._bridge){
         self._bridge.close();
         self._bridge = null;
@@ -230,11 +232,15 @@ module ienotification{
 
     dispose():void{
       let self = this;
+      if (self.closed){
+        return;        
+      }
       this.delayTasks.endAllTasks();
       if (self._bridge){
         self._bridge.close();
       }
-      self.fire(EVENT_DISPOSE);    
+      self.fire(EVENT_DISPOSE);
+      self.closed = true;    
       console.log('close notification...');
     }
 
@@ -250,7 +256,11 @@ module ienotification{
         `dialogWidth:${width}px;dialogHeight:${height}px;dialogTop:${top}px;dialogLeft:${left}px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes`);
       self._popup = popup;
       // self.delayTasks.addRepeatTask('fixDialogPosition', ()=>fixDialogPosition(popup), 100);
+      setDialogPosition(popup, getDialogPosition(popup));
+      bridge.addEventListener('unload', ()=>self.close());
+
       self.delayTasks.addRepeatTask('fixBridgePosition', ()=>hideWindowBehindDialog(bridge, popup), 100);
+      self.delayTasks.addRepeatTask('hideDialogAfterMove', ()=>onDialogMoved(popup, ()=>self.close()), 100);
       self.delayTasks.addTask('closePopup', ()=>self.close(), IENotification.timeout);
     }
 
@@ -265,7 +275,6 @@ module ienotification{
       iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
 
       popup.addEventListener('click', (event)=>self._doClick(event));
-      popup.addEventListener('blur', ()=>self.dispose());
       popup.addEventListener('unload', ()=>self.dispose());
       popup.focus();
     }
@@ -335,6 +344,25 @@ module ienotification{
         return;
       }
       setDialogPosition(dialog, dialog.fixedPosition);
+    } catch (e){
+      //do nothing here
+    }
+  }
+
+  function onDialogMoved(dialog:Dialog, handler:Function):void{
+    if (!dialog){
+      return;
+    }
+    try {
+      let pos = getDialogPosition(dialog);
+      if (!dialog.lastPosition){
+        dialog.lastPosition = pos;
+        return;
+      }
+      if (dialog.lastPosition.equals(pos)){
+        return;
+      }
+      handler();
     } catch (e){
       //do nothing here
     }
