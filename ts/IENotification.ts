@@ -1,9 +1,4 @@
-import Position from './Position';
-import Observable from './Observable';
-import DelayTasks from './DelayTasks';
-import IENotificationQueue from './IENotificationQueue';
-
-declare interface IWindow extends Window{
+export declare interface IWindow extends Window{
   open(url?: string, target?: string, features?: string, replace?: boolean): IWindow;
   Notification;
   IENotification;
@@ -13,28 +8,33 @@ declare interface IWindow extends Window{
 }
 
 
-declare interface IDialog extends IWindow{
+export declare interface IDialog extends IWindow{
   dialogArguments:any;
   dialogLeft:string;
   dialogTop:string;
   dialogHeight:string;
   dialogWidth:string;
   fixedPosition: Position;
+  IENotificationContentWindow;
 }
 
-declare class Promise<T>{
+export declare class Promise<T>{
   constructor(callback:(resolve:(T)=>void, reject:Function)=>void);
 }
 
 declare var window:IWindow;
 
+import Position from './Position';
+import Observable from './Observable';
+import DelayTasks from './DelayTasks';
+import {IENotificationQueue} from './IENotificationQueue';
 //-------------------------------------------------------------------------------
 
-const EVENT_OPEN = 'OPEN';
-const EVENT_DISPOSE = 'DISPOSE';
+export const EVENT_OPEN = 'OPEN';
+export const EVENT_DISPOSE = 'DISPOSE';
 
 
-export default class IENotification extends Observable{
+export class IENotification extends Observable{
   title: string;
   body: string;
   icon: string;
@@ -100,7 +100,7 @@ export default class IENotification extends Observable{
     }
   }
 
-  dispose():void{
+  private _dispose():void{
     let self = this;
     if (self.closed){
       return;        
@@ -134,7 +134,7 @@ export default class IENotification extends Observable{
     self.delayTasks.addTask('closePopup', ()=>self.close(), IENotification.timeout);
   }
 
-  private _initPopup(popup:IDialog){
+  initPopup(popup:IDialog){
     let self = this;
     let titleDiv = popup.document.getElementById('title-div');
     titleDiv.innerHTML = self.title;
@@ -145,13 +145,10 @@ export default class IENotification extends Observable{
     iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
 
     popup.addEventListener('click', (event)=>self._doClick(event));
-    popup.addEventListener('unload', ()=>self.dispose());
+    popup.addEventListener('unload', ()=>self._dispose());
     popup.focus();
   }
 
-  static initContentInPopup(popup:IDialog){
-    popup.dialogArguments._initPopup(popup);
-  }
 
   //We don't need to implement this, just compatible with formal API
   static requestPermission(callback:Function){
@@ -163,7 +160,6 @@ export default class IENotification extends Observable{
       });
     }
   }
-
 
   private _doClick(event:Event){
     let self:IENotification = this;

@@ -44,7 +44,8 @@
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(1);
+	__webpack_require__(1);
+	module.exports = __webpack_require__(6);
 
 
 /***/ },
@@ -60,9 +61,10 @@
 	var Position_1 = __webpack_require__(2);
 	var Observable_1 = __webpack_require__(3);
 	var DelayTasks_1 = __webpack_require__(4);
+	var IENotificationQueue_1 = __webpack_require__(5);
 	//-------------------------------------------------------------------------------
-	var EVENT_OPEN = 'OPEN';
-	var EVENT_DISPOSE = 'DISPOSE';
+	exports.EVENT_OPEN = 'OPEN';
+	exports.EVENT_DISPOSE = 'DISPOSE';
 	var IENotification = (function (_super) {
 	    __extends(IENotification, _super);
 	    function IENotification(title, options) {
@@ -76,7 +78,7 @@
 	        }
 	        self.delayTasks = new DelayTasks_1.default();
 	        self.closed = false;
-	        IENotificationQueue.add(self);
+	        IENotificationQueue_1.IENotificationQueue.add(self);
 	    }
 	    IENotification.prototype.show = function () {
 	        var self = this;
@@ -89,7 +91,7 @@
 	        self.delayTasks.addTask('initBridge', function () {
 	            self._initBridge(bridge);
 	        }, 10);
-	        self.fire(EVENT_OPEN);
+	        self.fire(exports.EVENT_OPEN);
 	        window.addEventListener('unload', function () { return self.close(); });
 	    };
 	    IENotification.prototype.close = function () {
@@ -106,7 +108,7 @@
 	            self._popup = null;
 	        }
 	    };
-	    IENotification.prototype.dispose = function () {
+	    IENotification.prototype._dispose = function () {
 	        var self = this;
 	        if (self.closed) {
 	            return;
@@ -115,7 +117,7 @@
 	        if (self._bridge) {
 	            self._bridge.close();
 	        }
-	        self.fire(EVENT_DISPOSE);
+	        self.fire(exports.EVENT_DISPOSE);
 	        self.closed = true;
 	        console.log('close notification...');
 	    };
@@ -134,7 +136,7 @@
 	        self.delayTasks.addRepeatTask('hideDialogAfterMove', function () { return onDialogMoved(popup, function () { return self.close(); }); }, 100);
 	        self.delayTasks.addTask('closePopup', function () { return self.close(); }, IENotification.timeout);
 	    };
-	    IENotification.prototype._initPopup = function (popup) {
+	    IENotification.prototype.initPopup = function (popup) {
 	        var self = this;
 	        var titleDiv = popup.document.getElementById('title-div');
 	        titleDiv.innerHTML = self.title;
@@ -144,11 +146,8 @@
 	        popup.document.title = appendBlankForTitle('');
 	        iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
 	        popup.addEventListener('click', function (event) { return self._doClick(event); });
-	        popup.addEventListener('unload', function () { return self.dispose(); });
+	        popup.addEventListener('unload', function () { return self._dispose(); });
 	        popup.focus();
-	    };
-	    IENotification.initContentInPopup = function (popup) {
-	        popup.dialogArguments._initPopup(popup);
 	    };
 	    //We don't need to implement this, just compatible with formal API
 	    IENotification.requestPermission = function (callback) {
@@ -177,8 +176,7 @@
 	    IENotification.edgeY = 20;
 	    return IENotification;
 	}(Observable_1.default));
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = IENotification;
+	exports.IENotification = IENotification;
 	function getDialogPosition(dialog) {
 	    return new Position_1.default({
 	        x: pxToNumber(dialog.dialogLeft),
@@ -260,44 +258,6 @@
 	function numberToPx(num) {
 	    return num + 'px';
 	}
-	var IENotificationQueue;
-	(function (IENotificationQueue) {
-	    var maxQueueSize = 20;
-	    var popupQueue = [];
-	    var currentNoti;
-	    function add(noti) {
-	        if (popupQueue.length > maxQueueSize) {
-	            return;
-	        }
-	        noti.on(EVENT_OPEN, function () { return currentNoti = noti; });
-	        noti.on(EVENT_DISPOSE, function () {
-	            currentNoti = null;
-	            remove(noti);
-	        });
-	        if (isEmpty() && !currentNoti) {
-	            noti.show();
-	        }
-	        else {
-	            popupQueue.push(noti);
-	        }
-	    }
-	    IENotificationQueue.add = add;
-	    function remove(noti) {
-	        arrayRemove(popupQueue, noti);
-	        if (!isEmpty()) {
-	            window.setTimeout(function () { return popupQueue.pop().show(); }, 200);
-	        }
-	    }
-	    function isEmpty() {
-	        return popupQueue.length == 0;
-	    }
-	    function arrayRemove(arr, item) {
-	        var index = arr.indexOf(item);
-	        if (index > -1) {
-	            arr.splice(index, 1);
-	        }
-	    }
-	})(IENotificationQueue || (IENotificationQueue = {}));
 	function syncWindowPosition(targetWin, refWin, offset) {
 	    if (offset === void 0) { offset = { x: 0, y: 0 }; }
 	    try {
@@ -435,15 +395,36 @@
 	    }
 	    DelayTasks.prototype.addTask = function (taskName, func, delay, repeat) {
 	        if (repeat === void 0) { repeat = false; }
+	        var self = this;
 	        if (repeat) {
-	            this.tasks[taskName] = -setInterval(func, delay);
+	            self.addRepeatTask(taskName, func, delay);
 	        }
 	        else {
-	            this.tasks[taskName] = setTimeout(func, delay);
+	            self.addSimpleTask(taskName, func, delay);
 	        }
 	    };
+	    DelayTasks.prototype.addSimpleTask = function (taskName, func, delay) {
+	        var self = this;
+	        self.tasks[taskName] = setTimeout(function () {
+	            self.endTask(taskName);
+	            func();
+	        }, delay);
+	    };
 	    DelayTasks.prototype.addRepeatTask = function (taskName, func, delay) {
-	        this.addTask(taskName, func, delay, true);
+	        var self = this;
+	        self.tasks[taskName] = -setInterval(func, delay);
+	    };
+	    DelayTasks.prototype.addAwaitingTask = function (taskName, func, waitingFunc, delay) {
+	        var self = this;
+	        self.addRepeatTask(taskName, function () {
+	            if (waitingFunc()) {
+	                self.endTask(taskName);
+	                func();
+	            }
+	        }, delay);
+	    };
+	    DelayTasks.prototype.getTaskNames = function () {
+	        return Object.keys(this.tasks);
 	    };
 	    DelayTasks.prototype.endTask = function (taskName) {
 	        var id = this.tasks[taskName];
@@ -457,12 +438,76 @@
 	    };
 	    DelayTasks.prototype.endAllTasks = function () {
 	        var _this = this;
-	        Object.keys(this.tasks).forEach(function (taskName) { return _this.endTask(taskName); });
+	        this.getTaskNames().forEach(function (taskName) { return _this.endTask(taskName); });
 	    };
 	    return DelayTasks;
 	}());
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = DelayTasks;
+
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var IENotification_1 = __webpack_require__(1);
+	var IENotificationQueue;
+	(function (IENotificationQueue) {
+	    var maxQueueSize = 20;
+	    var popupQueue = [];
+	    var currentNoti;
+	    function add(noti) {
+	        if (popupQueue.length > maxQueueSize) {
+	            return;
+	        }
+	        noti.on(IENotification_1.EVENT_OPEN, function () { return currentNoti = noti; });
+	        noti.on(IENotification_1.EVENT_DISPOSE, function () {
+	            currentNoti = null;
+	            remove(noti);
+	        });
+	        if (isEmpty() && !currentNoti) {
+	            noti.show();
+	        }
+	        else {
+	            popupQueue.push(noti);
+	        }
+	    }
+	    IENotificationQueue.add = add;
+	    function remove(noti) {
+	        arrayRemove(popupQueue, noti);
+	        if (!isEmpty()) {
+	            window.setTimeout(function () { return popupQueue.pop().show(); }, 200);
+	        }
+	    }
+	    function isEmpty() {
+	        return popupQueue.length == 0;
+	    }
+	    function arrayRemove(arr, item) {
+	        var index = arr.indexOf(item);
+	        if (index > -1) {
+	            arr.splice(index, 1);
+	        }
+	    }
+	})(IENotificationQueue = exports.IENotificationQueue || (exports.IENotificationQueue = {}));
+
+
+/***/ },
+/* 6 */
+/***/ function(module, exports) {
+
+	"use strict";
+	var IENotificationContentWindow;
+	(function (IENotificationContentWindow) {
+	    function initContentInPopup() {
+	        var popup = window;
+	        popup.dialogArguments.initPopup(popup);
+	    }
+	    IENotificationContentWindow.initContentInPopup = initContentInPopup;
+	})(IENotificationContentWindow = exports.IENotificationContentWindow || (exports.IENotificationContentWindow = {}));
+	if (window.IENotification && window.dialogArguments) {
+	    window.IENotificationContentWindow = IENotificationContentWindow;
+	}
 
 
 /***/ }

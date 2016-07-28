@@ -1,23 +1,47 @@
 export default class DelayTasks{
-  tasks;
+  private tasks;
 
   constructor(){
     this.tasks = {};
   }
 
-  addTask(taskName:string, func:Function, delay:number, repeat=false):void{
+  public addTask(taskName:string, func:Function, delay:number, repeat=false):void{
+    let self = this;
     if (repeat){
-      this.tasks[taskName] = - setInterval(func, delay);
+      self.addRepeatTask(taskName, func, delay);
     } else {
-      this.tasks[taskName] = setTimeout(func, delay);
+      self.addSimpleTask(taskName, func, delay);
     }
   }
 
-  addRepeatTask(taskName:string, func:Function, delay:number):void{
-    this.addTask(taskName, func, delay, true);
+  public addSimpleTask(taskName:string, func:Function, delay:number):void{
+    let self = this;
+    self.tasks[taskName] = setTimeout(()=>{
+      self.endTask(taskName);
+      func();
+    }, delay);
   }
 
-  endTask(taskName):void{
+  public addRepeatTask(taskName:string, func:Function, delay:number):void{
+    let self = this;
+    self.tasks[taskName] = - setInterval(func, delay);
+  }
+
+  public addAwaitingTask(taskName:string, func:Function, waitingFunc:Function, delay:number):void{
+    let self = this;
+    self.addRepeatTask(taskName, ()=>{
+      if (waitingFunc()){
+        self.endTask(taskName);
+        func();
+      }
+    }, delay);
+  }
+
+  public getTaskNames():string[]{
+    return Object.keys(this.tasks);
+  }
+
+  public endTask(taskName):void{
     let id = this.tasks[taskName];
     if (id > 0){
       clearTimeout(id);
@@ -27,7 +51,7 @@ export default class DelayTasks{
     delete this.tasks[taskName];
   }
 
-  endAllTasks(){
-    Object.keys(this.tasks).forEach(taskName=>this.endTask(taskName));
+  public endAllTasks(){
+    this.getTaskNames().forEach(taskName=>this.endTask(taskName));
   }
 }

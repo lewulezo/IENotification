@@ -1,5 +1,5 @@
 module.exports = {  
-  entry: ['./ts/IENotification.ts'],
+  entry: ['./ts/IENotification.ts', './ts/IENotificationContentWindow.ts'],
   output: {
     filename: 'IENotification.js'
   },

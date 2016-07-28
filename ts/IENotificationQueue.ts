@@ -1,3 +1,6 @@
+import {IENotification, EVENT_OPEN, EVENT_DISPOSE} from './IENotification';
+
+
 export module IENotificationQueue{
   let maxQueueSize = 20;
   let popupQueue:IENotification[] = [];

@@ -7,10 +7,10 @@ var __extends = (this && this.__extends) || function (d, b) {
 var Position_1 = require('./Position');
 var Observable_1 = require('./Observable');
 var DelayTasks_1 = require('./DelayTasks');
-var es6_promise_1 = require('es6-promise');
+var IENotificationQueue_1 = require('./IENotificationQueue');
 //-------------------------------------------------------------------------------
-var EVENT_OPEN = 'OPEN';
-var EVENT_DISPOSE = 'DISPOSE';
+exports.EVENT_OPEN = 'OPEN';
+exports.EVENT_DISPOSE = 'DISPOSE';
 var IENotification = (function (_super) {
     __extends(IENotification, _super);
     function IENotification(title, options) {
@@ -24,7 +24,7 @@ var IENotification = (function (_super) {
         }
         self.delayTasks = new DelayTasks_1.default();
         self.closed = false;
-        IENotificationQueue.add(self);
+        IENotificationQueue_1.IENotificationQueue.add(self);
     }
     IENotification.prototype.show = function () {
         var self = this;
@@ -32,13 +32,13 @@ var IENotification = (function (_super) {
         var width = IENotification.notificationWidth;
         var left = screen.width - width;
         var top = screen.height - height;
-        var bridge = window.open(IENotification.notificationPath + "bridge.html", self.title, "width=" + width + ",height=" + height + ",top=" + top + ",left=" + left + ",center=0,resizable=0,scroll=0,status=0,location=0");
+        var bridge = exports.window.open(IENotification.notificationPath + "bridge.html", self.title, "width=" + width + ",height=" + height + ",top=" + top + ",left=" + left + ",center=0,resizable=0,scroll=0,status=0,location=0");
         self._bridge = bridge;
         self.delayTasks.addTask('initBridge', function () {
             self._initBridge(bridge);
         }, 10);
-        self.fire(EVENT_OPEN);
-        window.addEventListener('unload', function () { return self.close(); });
+        self.fire(exports.EVENT_OPEN);
+        exports.window.addEventListener('unload', function () { return self.close(); });
     };
     IENotification.prototype.close = function () {
         var self = this;
@@ -54,7 +54,7 @@ var IENotification = (function (_super) {
             self._popup = null;
         }
     };
-    IENotification.prototype.dispose = function () {
+    IENotification.prototype._dispose = function () {
         var self = this;
         if (self.closed) {
             return;
@@ -63,7 +63,7 @@ var IENotification = (function (_super) {
         if (self._bridge) {
             self._bridge.close();
         }
-        self.fire(EVENT_DISPOSE);
+        self.fire(exports.EVENT_DISPOSE);
         self.closed = true;
         console.log('close notification...');
     };
@@ -82,7 +82,7 @@ var IENotification = (function (_super) {
         self.delayTasks.addRepeatTask('hideDialogAfterMove', function () { return onDialogMoved(popup, function () { return self.close(); }); }, 100);
         self.delayTasks.addTask('closePopup', function () { return self.close(); }, IENotification.timeout);
     };
-    IENotification.prototype._initPopup = function (popup) {
+    IENotification.prototype.initPopup = function (popup) {
         var self = this;
         var titleDiv = popup.document.getElementById('title-div');
         titleDiv.innerHTML = self.title;
@@ -92,11 +92,8 @@ var IENotification = (function (_super) {
         popup.document.title = appendBlankForTitle('');
         iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
         popup.addEventListener('click', function (event) { return self._doClick(event); });
-        popup.addEventListener('unload', function () { return self.dispose(); });
+        popup.addEventListener('unload', function () { return self._dispose(); });
         popup.focus();
-    };
-    IENotification.initContentInPopup = function (popup) {
-        popup.dialogArguments._initPopup(popup);
     };
     //We don't need to implement this, just compatible with formal API
     IENotification.requestPermission = function (callback) {
@@ -104,7 +101,7 @@ var IENotification = (function (_super) {
             callback('granted');
         }
         else {
-            return new es6_promise_1.Promise(function (res, rej) {
+            return new Promise(function (res, rej) {
                 res('granted');
             });
         }
@@ -116,7 +113,7 @@ var IENotification = (function (_super) {
             self.onclick(event);
         }
         self.close();
-        window.focus();
+        exports.window.focus();
     };
     IENotification.timeout = 20000;
     IENotification.notificationHeight = 90;
@@ -125,8 +122,7 @@ var IENotification = (function (_super) {
     IENotification.edgeY = 20;
     return IENotification;
 }(Observable_1.default));
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = IENotification;
+exports.IENotification = IENotification;
 function getDialogPosition(dialog) {
     return new Position_1.default({
         x: pxToNumber(dialog.dialogLeft),
@@ -208,44 +204,6 @@ function pxToNumber(str) {
 function numberToPx(num) {
     return num + 'px';
 }
-var IENotificationQueue;
-(function (IENotificationQueue) {
-    var maxQueueSize = 20;
-    var popupQueue = [];
-    var currentNoti;
-    function add(noti) {
-        if (popupQueue.length > maxQueueSize) {
-            return;
-        }
-        noti.on(EVENT_OPEN, function () { return currentNoti = noti; });
-        noti.on(EVENT_DISPOSE, function () {
-            currentNoti = null;
-            remove(noti);
-        });
-        if (isEmpty() && !currentNoti) {
-            noti.show();
-        }
-        else {
-            popupQueue.push(noti);
-        }
-    }
-    IENotificationQueue.add = add;
-    function remove(noti) {
-        arrayRemove(popupQueue, noti);
-        if (!isEmpty()) {
-            window.setTimeout(function () { return popupQueue.pop().show(); }, 200);
-        }
-    }
-    function isEmpty() {
-        return popupQueue.length == 0;
-    }
-    function arrayRemove(arr, item) {
-        var index = arr.indexOf(item);
-        if (index > -1) {
-            arr.splice(index, 1);
-        }
-    }
-})(IENotificationQueue || (IENotificationQueue = {}));
 function syncWindowPosition(targetWin, refWin, offset) {
     if (offset === void 0) { offset = { x: 0, y: 0 }; }
     try {
@@ -259,14 +217,14 @@ function syncWindowPosition(targetWin, refWin, offset) {
     }
 }
 function getDefaultRootPath() {
-    var queryStr = window.location.search;
-    var urlStr = window.location.href;
+    var queryStr = exports.window.location.search;
+    var urlStr = exports.window.location.href;
     var path = urlStr.substr(0, urlStr.length - queryStr.length);
     return path.substring(0, path.lastIndexOf('/')) + '/';
 }
 IENotification.basePath = getDefaultRootPath();
 IENotification.notificationPath = IENotification.basePath + "IENotification/";
-if (!window.Notification) {
-    window.Notification = window.IENotification = IENotification;
+if (!exports.window.Notification) {
+    exports.window.Notification = exports.window.IENotification = IENotification;
 }
 //# sourceMappingURL=IENotification.js.map

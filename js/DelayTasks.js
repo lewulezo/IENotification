@@ -5,15 +5,36 @@ var DelayTasks = (function () {
     }
     DelayTasks.prototype.addTask = function (taskName, func, delay, repeat) {
         if (repeat === void 0) { repeat = false; }
+        var self = this;
         if (repeat) {
-            this.tasks[taskName] = -setInterval(func, delay);
+            self.addRepeatTask(taskName, func, delay);
         }
         else {
-            this.tasks[taskName] = setTimeout(func, delay);
+            self.addSimpleTask(taskName, func, delay);
         }
     };
+    DelayTasks.prototype.addSimpleTask = function (taskName, func, delay) {
+        var self = this;
+        self.tasks[taskName] = setTimeout(function () {
+            self.endTask(taskName);
+            func();
+        }, delay);
+    };
     DelayTasks.prototype.addRepeatTask = function (taskName, func, delay) {
-        this.addTask(taskName, func, delay, true);
+        var self = this;
+        self.tasks[taskName] = -setInterval(func, delay);
+    };
+    DelayTasks.prototype.addAwaitingTask = function (taskName, func, waitingFunc, delay) {
+        var self = this;
+        self.addRepeatTask(taskName, function () {
+            if (waitingFunc()) {
+                self.endTask(taskName);
+                func();
+            }
+        }, delay);
+    };
+    DelayTasks.prototype.getTaskNames = function () {
+        return Object.keys(this.tasks);
     };
     DelayTasks.prototype.endTask = function (taskName) {
         var id = this.tasks[taskName];
@@ -27,7 +48,7 @@ var DelayTasks = (function () {
     };
     DelayTasks.prototype.endAllTasks = function () {
         var _this = this;
-        Object.keys(this.tasks).forEach(function (taskName) { return _this.endTask(taskName); });
+        this.getTaskNames().forEach(function (taskName) { return _this.endTask(taskName); });
     };
     return DelayTasks;
 }());
