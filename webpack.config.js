@@ -1,11 +1,10 @@
 module.exports = {  
   entry: ['./ts/IENotification.ts'],
   output: {
-    path: "",
     filename: 'IENotification.js'
   },
   resolve: {
-    extensions: ['', '.webpack.js', '.web.js', '.ts', '.js']
+    extensions: ['', '.d.ts',' .webpack.js', '.web.js', '.ts', '.js']
   },
   devtool: 'source-map',
   module: {

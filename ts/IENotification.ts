@@ -1,5 +1,3 @@
-'use strict';
-
 import Position from './Position';
 import Observable from './Observable';
 import DelayTasks from './DelayTasks';

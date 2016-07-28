@@ -6,6 +6,7 @@
     "sourceMap": true
   },
   "files": [
-    "ts/IENotification.ts"
+    "ts/IENotification.ts",
+    "typings/index.d.ts"
   ]
 }

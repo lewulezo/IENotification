@@ -1,2 +1,2 @@
-tsc ts/IENotification.ts --outDir js/ -target es5 --sourceMap -d
+tsc
 lessc less/notification.less css/notification.css --source-map

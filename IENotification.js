@@ -51,7 +51,7 @@
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
+	"use strict";
 	var __extends = (this && this.__extends) || function (d, b) {
 	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
 	    function __() { this.constructor = d; }
@@ -177,6 +177,8 @@
 	    IENotification.edgeY = 20;
 	    return IENotification;
 	}(Observable_1.default));
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = IENotification;
 	function getDialogPosition(dialog) {
 	    return new Position_1.default({
 	        x: pxToNumber(dialog.dialogLeft),
