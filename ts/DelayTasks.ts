@@ -30,9 +30,13 @@ export default class DelayTasks{
   public addAwaitingTask(taskName:string, func:Function, waitingFunc:Function, delay:number):void{
     let self = this;
     self.addRepeatTask(taskName, ()=>{
-      if (waitingFunc()){
-        self.endTask(taskName);
-        func();
+      try {
+        if (waitingFunc()){
+          self.endTask(taskName);
+          func();
+        }
+      } catch (error){
+        //treat error as false in this case
       }
     }, delay);
   }

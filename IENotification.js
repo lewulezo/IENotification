@@ -417,9 +417,13 @@
 	    DelayTasks.prototype.addAwaitingTask = function (taskName, func, waitingFunc, delay) {
 	        var self = this;
 	        self.addRepeatTask(taskName, function () {
-	            if (waitingFunc()) {
-	                self.endTask(taskName);
-	                func();
+	            try {
+	                if (waitingFunc()) {
+	                    self.endTask(taskName);
+	                    func();
+	                }
+	            }
+	            catch (error) {
 	            }
 	        }, delay);
 	    };
