@@ -131,7 +131,7 @@
 	        self._popup = popup;
 	        // self.delayTasks.addRepeatTask('fixDialogPosition', ()=>fixDialogPosition(popup), 100);
 	        setDialogPosition(popup, getDialogPosition(popup));
-	        bridge.addEventListener('unload', function () { return self.close(); });
+	        self.delayTasks.addAwaitingTask('unloadBridge', function () { return bridge.addEventListener('unload', function () { return self.close(); }); }, function () { return bridge.addEventListener instanceof Function; }, 100);
 	        self.delayTasks.addRepeatTask('fixBridgePosition', function () { return hideWindowBehindDialog(bridge, popup); }, 100);
 	        self.delayTasks.addRepeatTask('hideDialogAfterMove', function () { return onDialogMoved(popup, function () { return self.close(); }); }, 100);
 	        self.delayTasks.addTask('closePopup', function () { return self.close(); }, IENotification.timeout);
@@ -239,7 +239,7 @@
 	    }
 	    try {
 	        var dialogPos = getDialogPosition(dialog);
-	        if (wnd.lastPosition && wnd.lastPosition.equals(dialogPos)) {
+	        if (wnd.lastPosion && wnd.lastPosition.equals(dialogPos)) {
 	            return;
 	        }
 	        wnd.moveTo(dialogPos.x + 20, dialogPos.y + 20);
