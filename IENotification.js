@@ -239,7 +239,7 @@
 	    }
 	    try {
 	        var dialogPos = getDialogPosition(dialog);
-	        if (wnd.lastPosion && wnd.lastPosition.equals(dialogPos)) {
+	        if (wnd.lastPosition && wnd.lastPosition.equals(dialogPos)) {
 	            return;
 	        }
 	        wnd.moveTo(dialogPos.x + 20, dialogPos.y + 20);
