@@ -132,19 +132,23 @@
 	        // self.delayTasks.addRepeatTask('fixDialogPosition', ()=>fixDialogPosition(popup), 100);
 	        setDialogPosition(popup, getDialogPosition(popup));
 	        self.delayTasks.addAwaitingTask('unloadBridge', function () { return bridge.addEventListener('unload', function () { return self.close(); }); }, function () { return bridge.addEventListener instanceof Function; }, 100);
+	        self.delayTasks.addAwaitingTask('initPopupContent', function () {
+	            var titleDiv = popup.document.getElementById('title-div');
+	            titleDiv.innerHTML = self.title;
+	            var bodyDiv = popup.document.getElementById('body-div');
+	            bodyDiv.innerText = self.body;
+	            var iconImg = popup.document.getElementById('icon-img');
+	            popup.document.title = appendBlankForTitle('');
+	            iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
+	        }, function () {
+	            !!popup.document.getElementById('title-div');
+	        }, 100);
 	        self.delayTasks.addRepeatTask('fixBridgePosition', function () { return hideWindowBehindDialog(bridge, popup); }, 100);
 	        self.delayTasks.addRepeatTask('hideDialogAfterMove', function () { return onDialogMoved(popup, function () { return self.close(); }); }, 100);
 	        self.delayTasks.addTask('closePopup', function () { return self.close(); }, IENotification.timeout);
 	    };
 	    IENotification.prototype.initPopup = function (popup) {
 	        var self = this;
-	        var titleDiv = popup.document.getElementById('title-div');
-	        titleDiv.innerHTML = self.title;
-	        var bodyDiv = popup.document.getElementById('body-div');
-	        bodyDiv.innerText = self.body;
-	        var iconImg = popup.document.getElementById('icon-img');
-	        popup.document.title = appendBlankForTitle('');
-	        iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
 	        popup.addEventListener('click', function (event) { return self._doClick(event); });
 	        popup.addEventListener('unload', function () { return self._dispose(); });
 	        popup.focus();
@@ -391,6 +395,7 @@
 	"use strict";
 	var DelayTasks = (function () {
 	    function DelayTasks() {
+	        this.logError = false;
 	        this.tasks = {};
 	    }
 	    DelayTasks.prototype.addTask = function (taskName, func, delay, repeat) {
@@ -407,23 +412,51 @@
 	        var self = this;
 	        self.tasks[taskName] = setTimeout(function () {
 	            self.endTask(taskName);
-	            func();
+	            try {
+	                func();
+	            }
+	            catch (error) {
+	                if (self.logError) {
+	                    console.log("running simple task " + taskName + " throws error:" + error);
+	                }
+	            }
 	        }, delay);
 	    };
 	    DelayTasks.prototype.addRepeatTask = function (taskName, func, delay) {
 	        var self = this;
-	        self.tasks[taskName] = -setInterval(func, delay);
+	        self.tasks[taskName] = -setInterval(function () {
+	            try {
+	                func();
+	            }
+	            catch (error) {
+	                if (self.logError) {
+	                    console.log("running repeat task " + taskName + " throws error:" + error);
+	                }
+	            }
+	        }, delay);
 	    };
 	    DelayTasks.prototype.addAwaitingTask = function (taskName, func, waitingFunc, delay) {
 	        var self = this;
 	        self.addRepeatTask(taskName, function () {
+	            var waitingFinished = false;
 	            try {
-	                if (waitingFunc()) {
-	                    self.endTask(taskName);
-	                    func();
-	                }
+	                waitingFinished = waitingFunc();
 	            }
 	            catch (error) {
+	                if (self.logError) {
+	                    console.log("check awaiting task " + taskName + " condition throws error:" + error);
+	                }
+	            }
+	            if (waitingFinished) {
+	                self.endTask(taskName);
+	                try {
+	                    func();
+	                }
+	                catch (error) {
+	                    if (self.logError) {
+	                        console.log("running awaiting task " + taskName + " throws error:" + error);
+	                    }
+	                }
 	            }
 	        }, delay);
 	    };

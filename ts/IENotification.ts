@@ -133,7 +133,17 @@ export class IENotification extends Observable{
       100
     );
     
-
+    self.delayTasks.addAwaitingTask('initPopupContent', ()=>{
+      let titleDiv = popup.document.getElementById('title-div');
+      titleDiv.innerHTML = self.title;
+      let bodyDiv = popup.document.getElementById('body-div');
+      bodyDiv.innerText = self.body;
+      let iconImg = <HTMLImageElement>popup.document.getElementById('icon-img');
+      popup.document.title = appendBlankForTitle('');
+      iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
+    }, ()=>{
+      !!popup.document.getElementById('title-div');
+    }, 100);
     self.delayTasks.addRepeatTask('fixBridgePosition', ()=>hideWindowBehindDialog(bridge, popup), 100);
     self.delayTasks.addRepeatTask('hideDialogAfterMove', ()=>onDialogMoved(popup, ()=>self.close()), 100);
     self.delayTasks.addTask('closePopup', ()=>self.close(), IENotification.timeout);
@@ -141,14 +151,6 @@ export class IENotification extends Observable{
 
   initPopup(popup:IDialog){
     let self = this;
-    let titleDiv = popup.document.getElementById('title-div');
-    titleDiv.innerHTML = self.title;
-    let bodyDiv = popup.document.getElementById('body-div');
-    bodyDiv.innerText = self.body;
-    let iconImg = <HTMLImageElement>popup.document.getElementById('icon-img');
-    popup.document.title = appendBlankForTitle('');
-    iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
-
     popup.addEventListener('click', (event)=>self._doClick(event));
     popup.addEventListener('unload', ()=>self._dispose());
     popup.focus();

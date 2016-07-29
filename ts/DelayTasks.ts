@@ -1,5 +1,6 @@
 export default class DelayTasks{
   private tasks;
+  private logError = false;
 
   constructor(){
     this.tasks = {};
@@ -18,25 +19,49 @@ export default class DelayTasks{
     let self = this;
     self.tasks[taskName] = setTimeout(()=>{
       self.endTask(taskName);
-      func();
+      try {
+        func();
+      } catch(error){
+        if (self.logError){
+          console.log(`running simple task ${taskName} throws error:${error}`);
+        }
+      }
     }, delay);
   }
 
   public addRepeatTask(taskName:string, func:Function, delay:number):void{
     let self = this;
-    self.tasks[taskName] = - setInterval(func, delay);
+    self.tasks[taskName] = - setInterval(()=>{
+      try {
+        func();
+      } catch(error){
+        if (self.logError){
+          console.log(`running repeat task ${taskName} throws error:${error}`);
+        }
+      }
+    }, delay);
   }
 
   public addAwaitingTask(taskName:string, func:Function, waitingFunc:Function, delay:number):void{
     let self = this;
     self.addRepeatTask(taskName, ()=>{
+      let waitingFinished = false;
       try {
-        if (waitingFunc()){
-          self.endTask(taskName);
-          func();
-        }
+        waitingFinished = waitingFunc();
       } catch (error){
-        //treat error as false in this case
+          if (self.logError){
+            console.log(`check awaiting task ${taskName} condition throws error:${error}`);
+          }   
+      }
+      if (waitingFinished){
+        self.endTask(taskName);
+        try {
+          func();
+        } catch (error){
+          if (self.logError){
+            console.log(`running awaiting task ${taskName} throws error:${error}`);
+          }          
+        }
       }
     }, delay);
   }
