@@ -53,14 +53,14 @@ export class IENotification extends Observable{
   public static edgeX = 5;
   public static edgeY = 20;
 
-  constructor(title:string, options){
+  constructor(title:string, options:{body:string, icon:string, data:string}){
     super();
     let self = this;
     self.title = title;
     if (options){
-      self.body = options.body || '';
-      self.icon = options.icon || '';
-      self.data = options.data || '';
+      self.body = options.body;
+      self.icon = options.icon;
+      self.data = options.data;
     }
     self.delayTasks = new DelayTasks();
     self.closed = false;
@@ -133,24 +133,36 @@ export class IENotification extends Observable{
       100
     );
 
-    self.delayTasks.addAwaitingTask('initPopupContent', ()=>{
-      let titleDiv = popup.document.getElementById('title-div');
-      titleDiv.innerHTML = self.title;
-      let bodyDiv = popup.document.getElementById('body-div');
-      bodyDiv.innerText = self.body;
-      let iconImg = <HTMLImageElement>popup.document.getElementById('icon-img');
-      popup.document.title = appendBlankForTitle('');
-      iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
-    }, ()=>{
-      !!popup.document.getElementById('title-div');
-    }, 100);
+    // self.delayTasks.addAwaitingTask('initPopupContent', ()=>{
+    //   let titleDiv = popup.document.getElementById('title-div');
+    //   titleDiv.innerHTML = self.title;
+    //   let bodyDiv = popup.document.getElementById('body-div');
+    //   bodyDiv.innerText = self.body;
+    //   let iconImg = <HTMLImageElement>popup.document.getElementById('icon-img');
+    //   popup.document.title = appendBlankForTitle('');
+    //   iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
+    // }, ()=>{
+    //   !!popup.document.getElementById('title-div');
+    // }, 100);
     self.delayTasks.addRepeatTask('fixBridgePosition', ()=>hideWindowBehindDialog(bridge, popup), 100);
     self.delayTasks.addRepeatTask('hideDialogAfterMove', ()=>onDialogMoved(popup, ()=>self.close()), 100);
     self.delayTasks.addTask('closePopup', ()=>self.close(), IENotification.timeout);
   }
 
+  private _initPopupContent(popup:IDialog){
+    let self = this;
+    let titleDiv = popup.document.getElementById('title-div');
+    titleDiv.innerHTML = self.title;
+    let bodyDiv = popup.document.getElementById('body-div');
+    bodyDiv.innerText = self.body;
+    let iconImg = <HTMLImageElement>popup.document.getElementById('icon-img');
+    popup.document.title = appendBlankForTitle('');
+    iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
+  }
+
   initPopup(popup:IDialog){
     let self = this;
+    self._initPopupContent(popup);
     popup.addEventListener('click', (event)=>self._doClick(event));
     popup.addEventListener('unload', ()=>self._dispose());
     popup.focus();
@@ -158,7 +170,7 @@ export class IENotification extends Observable{
 
 
   //We don't need to implement this, just compatible with formal API
-  static requestPermission(callback:Function){
+  static requestPermission(callback?:((string)=>any)){
     if (callback && callback instanceof Function){
       callback('granted');
     } else {

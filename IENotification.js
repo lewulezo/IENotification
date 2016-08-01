@@ -132,23 +132,34 @@
 	        // self.delayTasks.addRepeatTask('fixDialogPosition', ()=>fixDialogPosition(popup), 100);
 	        setDialogPosition(popup, getDialogPosition(popup));
 	        self.delayTasks.addAwaitingTask('unloadBridge', function () { return bridge.addEventListener('unload', function () { return self.close(); }); }, function () { return bridge.addEventListener instanceof Function; }, 100);
-	        self.delayTasks.addAwaitingTask('initPopupContent', function () {
-	            var titleDiv = popup.document.getElementById('title-div');
-	            titleDiv.innerHTML = self.title;
-	            var bodyDiv = popup.document.getElementById('body-div');
-	            bodyDiv.innerText = self.body;
-	            var iconImg = popup.document.getElementById('icon-img');
-	            popup.document.title = appendBlankForTitle('');
-	            iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
-	        }, function () {
-	            !!popup.document.getElementById('title-div');
-	        }, 100);
+	        // self.delayTasks.addAwaitingTask('initPopupContent', ()=>{
+	        //   let titleDiv = popup.document.getElementById('title-div');
+	        //   titleDiv.innerHTML = self.title;
+	        //   let bodyDiv = popup.document.getElementById('body-div');
+	        //   bodyDiv.innerText = self.body;
+	        //   let iconImg = <HTMLImageElement>popup.document.getElementById('icon-img');
+	        //   popup.document.title = appendBlankForTitle('');
+	        //   iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
+	        // }, ()=>{
+	        //   !!popup.document.getElementById('title-div');
+	        // }, 100);
 	        self.delayTasks.addRepeatTask('fixBridgePosition', function () { return hideWindowBehindDialog(bridge, popup); }, 100);
 	        self.delayTasks.addRepeatTask('hideDialogAfterMove', function () { return onDialogMoved(popup, function () { return self.close(); }); }, 100);
 	        self.delayTasks.addTask('closePopup', function () { return self.close(); }, IENotification.timeout);
 	    };
+	    IENotification.prototype._initPopupContent = function (popup) {
+	        var self = this;
+	        var titleDiv = popup.document.getElementById('title-div');
+	        titleDiv.innerHTML = self.title;
+	        var bodyDiv = popup.document.getElementById('body-div');
+	        bodyDiv.innerText = self.body;
+	        var iconImg = popup.document.getElementById('icon-img');
+	        popup.document.title = appendBlankForTitle('');
+	        iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
+	    };
 	    IENotification.prototype.initPopup = function (popup) {
 	        var self = this;
+	        self._initPopupContent(popup);
 	        popup.addEventListener('click', function (event) { return self._doClick(event); });
 	        popup.addEventListener('unload', function () { return self._dispose(); });
 	        popup.focus();

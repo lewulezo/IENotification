@@ -7,6 +7,7 @@
   },
   "files": [
     "ts/IENotification.ts",
+    "ts/IENotificationContentWindow.ts",
     "typings/index.d.ts"
   ]
 }
