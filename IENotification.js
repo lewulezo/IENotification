@@ -45,7 +45,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	__webpack_require__(1);
-	module.exports = __webpack_require__(6);
+	module.exports = __webpack_require__(7);
 
 
 /***/ },
@@ -58,10 +58,10 @@
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var Position_1 = __webpack_require__(2);
-	var Observable_1 = __webpack_require__(3);
-	var DelayTasks_1 = __webpack_require__(4);
-	var IENotificationQueue_1 = __webpack_require__(5);
+	var Observable_1 = __webpack_require__(2);
+	var DelayTasks_1 = __webpack_require__(3);
+	var IENotificationQueue_1 = __webpack_require__(4);
+	var WindowUtils_1 = __webpack_require__(5);
 	//-------------------------------------------------------------------------------
 	exports.EVENT_OPEN = 'OPEN';
 	exports.EVENT_DISPOSE = 'DISPOSE';
@@ -72,11 +72,11 @@
 	        var self = this;
 	        self.title = title;
 	        if (options) {
-	            self.body = options.body;
-	            self.icon = options.icon;
-	            self.data = options.data;
+	            self.body = options.body || '';
+	            self.icon = options.icon || '';
+	            self.data = options.data || '';
 	        }
-	        self.delayTasks = new DelayTasks_1.default();
+	        self._delayTasks = new DelayTasks_1.default();
 	        self.closed = false;
 	        IENotificationQueue_1.IENotificationQueue.add(self);
 	    }
@@ -88,7 +88,7 @@
 	        var top = screen.height - height;
 	        var bridge = window.open(IENotification.notificationPath + "bridge.html", self.title, "width=" + width + ",height=" + height + ",top=" + top + ",left=" + left + ",center=0,resizable=0,scroll=0,status=0,location=0");
 	        self._bridge = bridge;
-	        self.delayTasks.addTask('initBridge', function () {
+	        self._delayTasks.addTask('initBridge', function () {
 	            self._initBridge(bridge);
 	        }, 10);
 	        self.fire(exports.EVENT_OPEN);
@@ -113,7 +113,7 @@
 	        if (self.closed) {
 	            return;
 	        }
-	        this.delayTasks.endAllTasks();
+	        this._delayTasks.endAllTasks();
 	        if (self._bridge) {
 	            self._bridge.close();
 	        }
@@ -130,22 +130,11 @@
 	        var popup = bridge.showModelessDialog("content.html", self, "dialogWidth:" + width + "px;dialogHeight:" + height + "px;dialogTop:" + top + "px;dialogLeft:" + left + "px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes");
 	        self._popup = popup;
 	        // self.delayTasks.addRepeatTask('fixDialogPosition', ()=>fixDialogPosition(popup), 100);
-	        setDialogPosition(popup, getDialogPosition(popup));
-	        self.delayTasks.addAwaitingTask('unloadBridge', function () { return bridge.addEventListener('unload', function () { return self.close(); }); }, function () { return bridge.addEventListener instanceof Function; }, 100);
-	        // self.delayTasks.addAwaitingTask('initPopupContent', ()=>{
-	        //   let titleDiv = popup.document.getElementById('title-div');
-	        //   titleDiv.innerHTML = self.title;
-	        //   let bodyDiv = popup.document.getElementById('body-div');
-	        //   bodyDiv.innerText = self.body;
-	        //   let iconImg = <HTMLImageElement>popup.document.getElementById('icon-img');
-	        //   popup.document.title = appendBlankForTitle('');
-	        //   iconImg.src = self.icon.indexOf('data:image/png;base64') == 0 ? self.icon : IENotification.basePath + self.icon;
-	        // }, ()=>{
-	        //   !!popup.document.getElementById('title-div');
-	        // }, 100);
-	        self.delayTasks.addRepeatTask('fixBridgePosition', function () { return hideWindowBehindDialog(bridge, popup); }, 100);
-	        self.delayTasks.addRepeatTask('hideDialogAfterMove', function () { return onDialogMoved(popup, function () { return self.close(); }); }, 100);
-	        self.delayTasks.addTask('closePopup', function () { return self.close(); }, IENotification.timeout);
+	        WindowUtils_1.WindowUtils.setDialogPosition(popup, WindowUtils_1.WindowUtils.getDialogPosition(popup));
+	        self._delayTasks.addAwaitingTask('unloadBridge', function () { return bridge.addEventListener('unload', function () { return self.close(); }); }, function () { return bridge.addEventListener instanceof Function; }, 100);
+	        self._delayTasks.addRepeatTask('fixBridgePosition', function () { return WindowUtils_1.WindowUtils.hideWindowBehindDialog(bridge, popup); }, 100);
+	        self._delayTasks.addRepeatTask('hideDialogAfterMove', function () { return WindowUtils_1.WindowUtils.onDialogMoved(popup, function () { return self.close(); }); }, 100);
+	        self._delayTasks.addTask('closePopup', function () { return self.close(); }, IENotification.timeout);
 	    };
 	    IENotification.prototype._initPopupContent = function (popup) {
 	        var self = this;
@@ -185,6 +174,8 @@
 	        window.focus();
 	    };
 	    IENotification.timeout = 20000;
+	    IENotification.basePath = '';
+	    IENotification.notificationPath = '';
 	    IENotification.notificationHeight = 90;
 	    IENotification.notificationWidth = 360;
 	    IENotification.edgeX = 5;
@@ -192,98 +183,12 @@
 	    return IENotification;
 	}(Observable_1.default));
 	exports.IENotification = IENotification;
-	function getDialogPosition(dialog) {
-	    return new Position_1.default({
-	        x: pxToNumber(dialog.dialogLeft),
-	        y: pxToNumber(dialog.dialogTop),
-	        w: pxToNumber(dialog.dialogWidth),
-	        h: pxToNumber(dialog.dialogHeight)
-	    });
-	}
-	function setDialogPosition(dialog, pos) {
-	    if (getDialogPosition(dialog).equals(pos)) {
-	        return;
-	    }
-	    dialog.dialogLeft = numberToPx(pos.x);
-	    dialog.dialogTop = numberToPx(pos.y);
-	    dialog.dialogWidth = numberToPx(pos.w);
-	    dialog.dialogHeight = numberToPx(pos.h);
-	}
 	function appendBlankForTitle(title) {
 	    var ret = [title];
 	    for (var i = 0; i < 40; i++) {
 	        ret.push('\u00A0\u00A0\u00A0\u00A0\u00A0');
 	    }
 	    return ret.join('');
-	}
-	function fixDialogPosition(dialog) {
-	    if (!dialog) {
-	        return;
-	    }
-	    try {
-	        if (!dialog.fixedPosition) {
-	            dialog.fixedPosition = getDialogPosition(dialog);
-	            return;
-	        }
-	        setDialogPosition(dialog, dialog.fixedPosition);
-	    }
-	    catch (e) {
-	    }
-	}
-	function onDialogMoved(dialog, handler) {
-	    if (!dialog) {
-	        return;
-	    }
-	    try {
-	        var pos = getDialogPosition(dialog);
-	        if (!dialog.lastPosition) {
-	            dialog.lastPosition = pos;
-	            return;
-	        }
-	        if (dialog.lastPosition.equals(pos)) {
-	            return;
-	        }
-	        handler();
-	    }
-	    catch (e) {
-	    }
-	}
-	function hideWindowBehindDialog(wnd, dialog) {
-	    if (!dialog) {
-	        return;
-	    }
-	    try {
-	        var dialogPos = getDialogPosition(dialog);
-	        if (wnd.lastPosition && wnd.lastPosition.equals(dialogPos)) {
-	            return;
-	        }
-	        wnd.moveTo(dialogPos.x + 20, dialogPos.y + 20);
-	        wnd.resizeTo(dialogPos.w - 20, dialogPos.h - 20);
-	        wnd.lastPosition = dialogPos;
-	    }
-	    catch (e) {
-	    }
-	}
-	function pxToNumber(str) {
-	    if (str.length < 2) {
-	        return 0;
-	    }
-	    return Number(str.substring(0, str.length - 2));
-	}
-	function numberToPx(num) {
-	    return num + 'px';
-	}
-	function syncWindowPosition(targetWin, refWin, offset) {
-	    if (offset === void 0) { offset = { x: 0, y: 0 }; }
-	    try {
-	        var x = refWin.screenX + offset.x;
-	        var y = refWin.screenY + offset.y;
-	        if (targetWin.screenX != x || targetWin.screenY != y) {
-	            targetWin.moveTo(x, y);
-	        }
-	    }
-	    catch (e) {
-	    }
 	}
 	function getDefaultRootPath() {
 	    var queryStr = window.location.search;
@@ -300,28 +205,6 @@
 
 /***/ },
 /* 2 */
-/***/ function(module, exports) {
-
-	"use strict";
-	var Position = (function () {
-	    function Position(_a) {
-	        var _b = _a.x, x = _b === void 0 ? 0 : _b, _c = _a.y, y = _c === void 0 ? 0 : _c, _d = _a.w, w = _d === void 0 ? 0 : _d, _e = _a.h, h = _e === void 0 ? 0 : _e;
-	        this.x = x;
-	        this.y = y;
-	        this.w = w;
-	        this.h = h;
-	    }
-	    Position.prototype.equals = function (pos) {
-	        return this.x == pos.x && this.y == pos.y && this.w == pos.w && this.h == pos.h;
-	    };
-	    return Position;
-	}());
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = Position;
-
-
-/***/ },
-/* 3 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -400,7 +283,7 @@
 
 
 /***/ },
-/* 4 */
+/* 3 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -495,7 +378,7 @@
 
 
 /***/ },
-/* 5 */
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -541,7 +424,131 @@
 
 
 /***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var Position_1 = __webpack_require__(6);
+	var WindowUtils;
+	(function (WindowUtils) {
+	    function getDialogPosition(dialog) {
+	        return new Position_1.default({
+	            x: pxToNumber(dialog.dialogLeft),
+	            y: pxToNumber(dialog.dialogTop),
+	            w: pxToNumber(dialog.dialogWidth),
+	            h: pxToNumber(dialog.dialogHeight)
+	        });
+	    }
+	    WindowUtils.getDialogPosition = getDialogPosition;
+	    function setDialogPosition(dialog, pos) {
+	        if (getDialogPosition(dialog).equals(pos)) {
+	            return;
+	        }
+	        dialog.dialogLeft = numberToPx(pos.x);
+	        dialog.dialogTop = numberToPx(pos.y);
+	        dialog.dialogWidth = numberToPx(pos.w);
+	        dialog.dialogHeight = numberToPx(pos.h);
+	    }
+	    WindowUtils.setDialogPosition = setDialogPosition;
+	    function fixDialogPosition(dialog) {
+	        if (!dialog) {
+	            return;
+	        }
+	        try {
+	            if (!dialog.fixedPosition) {
+	                dialog.fixedPosition = getDialogPosition(dialog);
+	                return;
+	            }
+	            setDialogPosition(dialog, dialog.fixedPosition);
+	        }
+	        catch (e) {
+	        }
+	    }
+	    WindowUtils.fixDialogPosition = fixDialogPosition;
+	    function onDialogMoved(dialog, handler) {
+	        if (!dialog) {
+	            return;
+	        }
+	        try {
+	            var pos = getDialogPosition(dialog);
+	            if (!dialog.lastPosition) {
+	                dialog.lastPosition = pos;
+	                return;
+	            }
+	            if (dialog.lastPosition.equals(pos)) {
+	                return;
+	            }
+	            handler();
+	        }
+	        catch (e) {
+	        }
+	    }
+	    WindowUtils.onDialogMoved = onDialogMoved;
+	    function hideWindowBehindDialog(wnd, dialog) {
+	        if (!dialog) {
+	            return;
+	        }
+	        try {
+	            var dialogPos = getDialogPosition(dialog);
+	            if (wnd.lastPosition && wnd.lastPosition.equals(dialogPos)) {
+	                return;
+	            }
+	            wnd.moveTo(dialogPos.x + 20, dialogPos.y + 20);
+	            wnd.resizeTo(dialogPos.w - 20, dialogPos.h - 20);
+	            wnd.lastPosition = dialogPos;
+	        }
+	        catch (e) {
+	        }
+	    }
+	    WindowUtils.hideWindowBehindDialog = hideWindowBehindDialog;
+	    function pxToNumber(str) {
+	        if (str.length < 2) {
+	            return 0;
+	        }
+	        return Number(str.substring(0, str.length - 2));
+	    }
+	    function numberToPx(num) {
+	        return num + 'px';
+	    }
+	    function syncWindowPosition(targetWin, refWin, offset) {
+	        if (offset === void 0) { offset = { x: 0, y: 0 }; }
+	        try {
+	            var x = refWin.screenX + offset.x;
+	            var y = refWin.screenY + offset.y;
+	            if (targetWin.screenX != x || targetWin.screenY != y) {
+	                targetWin.moveTo(x, y);
+	            }
+	        }
+	        catch (e) {
+	        }
+	    }
+	})(WindowUtils = exports.WindowUtils || (exports.WindowUtils = {}));
+
+
+/***/ },
 /* 6 */
+/***/ function(module, exports) {
+
+	"use strict";
+	var Position = (function () {
+	    function Position(_a) {
+	        var _b = _a.x, x = _b === void 0 ? 0 : _b, _c = _a.y, y = _c === void 0 ? 0 : _c, _d = _a.w, w = _d === void 0 ? 0 : _d, _e = _a.h, h = _e === void 0 ? 0 : _e;
+	        this.x = x;
+	        this.y = y;
+	        this.w = w;
+	        this.h = h;
+	    }
+	    Position.prototype.equals = function (pos) {
+	        return this.x == pos.x && this.y == pos.y && this.w == pos.w && this.h == pos.h;
+	    };
+	    return Position;
+	}());
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Position;
+
+
+/***/ },
+/* 7 */
 /***/ function(module, exports) {
 
 	"use strict";

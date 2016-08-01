@@ -1,4 +1,4 @@
-import {IDialog, IWindow} from './IENotification';
+import {IDialog, IWindow} from './WindowUtils';
 
 declare var window:IDialog;
 
