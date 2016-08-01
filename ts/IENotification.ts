@@ -58,9 +58,9 @@ export class IENotification extends Observable{
     let self = this;
     self.title = title;
     if (options){
-      self.body = options.body;
-      self.icon = options.icon;
-      self.data = options.data;
+      self.body = options.body || '';
+      self.icon = options.icon || '';
+      self.data = options.data || '';
     }
     self.delayTasks = new DelayTasks();
     self.closed = false;
@@ -73,22 +73,22 @@ export class IENotification extends Observable{
     let width = IENotification.notificationWidth;
     let left = screen.width - width;
     let top = screen.height - height;
-    let bridge:IWindow = window.open(`${IENotification.notificationPath}bridge.html`, self.title, 
+    let bridge:IWindow = window.open(`${IENotification.notificationPath}bridge.html`, self.title,
     `width=${width},height=${height},top=${top},left=${left},center=0,resizable=0,scroll=0,status=0,location=0`);
 
     self._bridge = bridge;
     self.delayTasks.addTask('initBridge', ()=> {
       self._initBridge(bridge);
     }, 10);
-    
+
     self.fire(EVENT_OPEN);
-    window.addEventListener('unload', ()=>self.close());    
+    window.addEventListener('unload', ()=>self.close());
   }
-  
+
   public close():void{
     let self = this;
     if (self.closed){
-      return;        
+      return;
     }
     if (self._bridge){
       self._bridge.close();
@@ -103,14 +103,14 @@ export class IENotification extends Observable{
   private _dispose():void{
     let self = this;
     if (self.closed){
-      return;        
+      return;
     }
     this.delayTasks.endAllTasks();
     if (self._bridge){
       self._bridge.close();
     }
     self.fire(EVENT_DISPOSE);
-    self.closed = true;    
+    self.closed = true;
     console.log('close notification...');
   }
 
@@ -122,17 +122,17 @@ export class IENotification extends Observable{
     let left = screen.width - width;
     let top = screen.height - height;
 
-    let popup = bridge.showModelessDialog(`content.html`, self, 
+    let popup = bridge.showModelessDialog(`content.html`, self,
       `dialogWidth:${width}px;dialogHeight:${height}px;dialogTop:${top}px;dialogLeft:${left}px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes`);
     self._popup = popup;
     // self.delayTasks.addRepeatTask('fixDialogPosition', ()=>fixDialogPosition(popup), 100);
     setDialogPosition(popup, getDialogPosition(popup));
-    self.delayTasks.addAwaitingTask('unloadBridge', 
-      ()=>bridge.addEventListener('unload', ()=>self.close()), 
+    self.delayTasks.addAwaitingTask('unloadBridge',
+      ()=>bridge.addEventListener('unload', ()=>self.close()),
       ()=>bridge.addEventListener instanceof Function,
       100
     );
-    
+
     self.delayTasks.addAwaitingTask('initPopupContent', ()=>{
       let titleDiv = popup.document.getElementById('title-div');
       titleDiv.innerHTML = self.title;
@@ -295,5 +295,4 @@ IENotification.notificationPath = IENotification.basePath + "IENotification/";
 
 if (!window.Notification){
   window.Notification = window.IENotification= IENotification;
-} 
-
+}
