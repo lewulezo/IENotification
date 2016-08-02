@@ -24,7 +24,7 @@ export class IENotification extends Observable{
   private _popup: IDialog;
   private _bridge: Window;
   private _delayTasks: DelayTasks;
-  protected closed: boolean;
+  closed: boolean;
 
   public static timeout = 20000;
   public static basePath = '';
