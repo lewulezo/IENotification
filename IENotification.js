@@ -212,40 +212,45 @@
 	    function Observable() {
 	        var self = this;
 	        self.listeners = {};
-	        self.addEventListener.bind(self);
-	        self.removeEventListener.bind(self);
-	        self.dispatchEvent.bind(self);
-	        self.fire.bind(self);
-	        self.on.bind(self);
-	        self.un.bind(self);
+	        self.fire = self.dispatchEvent.bind(self);
+	        self.un = self.removeEventListener.bind(self);
+	        self.on = self.addEventListener.bind(self);
 	    }
-	    Observable.prototype.addEventListener = function (eventName, func) {
+	    Observable.prototype.addEventListener = function (eventName, handler) {
 	        var handlers = this.listeners[eventName];
 	        if (handlers) {
-	            handlers.push(func);
+	            handlers.push(handler);
 	        }
 	        else {
-	            handlers = [func];
+	            handlers = [handler];
 	            this.listeners[eventName] = handlers;
 	        }
+	        return this;
 	    };
-	    Observable.prototype.removeEventListener = function (eventName, func) {
+	    Observable.prototype.removeEventListener = function (eventName, handler) {
 	        var handlers = this.listeners[eventName];
 	        if (handlers) {
-	            var index = handlers.indexOf(func);
+	            var index = handlers.indexOf(handler);
 	            if (index > -1) {
 	                handlers.splice(index, 1);
 	            }
 	        }
+	        return this;
 	    };
 	    Observable.prototype.dispatchEvent = function (eventName) {
+	        var args = [];
+	        for (var _i = 1; _i < arguments.length; _i++) {
+	            args[_i - 1] = arguments[_i];
+	        }
 	        var self = this;
-	        var handlers = self.listeners[eventName];
+	        var handlers;
+	        handlers = self.listeners[eventName];
 	        var evt = new ObjectEvent(eventName);
 	        if (handlers) {
 	            handlers.some(function (func) {
 	                try {
-	                    func.call(self, evt);
+	                    var dispatchArgs = [evt].concat(args);
+	                    func.apply(self, dispatchArgs);
 	                    if (evt.stop) {
 	                        return true;
 	                    }
@@ -259,19 +264,9 @@
 	            });
 	        }
 	    };
-	    Observable.prototype.fire = function (eventName) {
-	        this.dispatchEvent(eventName);
-	    };
-	    Observable.prototype.on = function (eventName, func) {
-	        this.addEventListener(eventName, func);
-	    };
-	    Observable.prototype.un = function (eventName, func) {
-	        this.removeEventListener(eventName, func);
-	    };
 	    return Observable;
 	}());
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = Observable;
+	exports.Observable = Observable;
 	var ObjectEvent = (function () {
 	    function ObjectEvent(name) {
 	        this.name = name;
@@ -280,6 +275,8 @@
 	    }
 	    return ObjectEvent;
 	}());
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Observable;
 
 
 /***/ },
