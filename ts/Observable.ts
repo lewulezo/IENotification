@@ -1,45 +1,49 @@
-
-export default class Observable{
+export class Observable{
   private listeners;
+  public fire:(eventName:string, ...args:any[])=>void;
+  public on:(eventName:string, handler:(event:ObjectEvent, ...args:any[])=>any)=>Observable;
+  public un:(eventName:string, func:(event:ObjectEvent,...args:any[])=>any)=>Observable;
+
   constructor(){
     let self = this;
     self.listeners = {};
-    self.addEventListener.bind(self);
-    self.removeEventListener.bind(self);
-    self.dispatchEvent.bind(self);
-    self.fire.bind(self);
-    self.on.bind(self);
-    self.un.bind(self);
+    self.fire = self.dispatchEvent.bind(self);
+    self.un = self.removeEventListener.bind(self);
+    self.on = self.addEventListener.bind(self);
   }
 
-  addEventListener(eventName:string, func:Function){
+  private addEventListener(eventName:string, handler:(eventName:string, ...args:any[])=>any): Observable{
     let handlers:Function[] = this.listeners[eventName];
     if (handlers){
-      handlers.push(func);
+      handlers.push(handler);
     } else {
-      handlers = [func];
+      handlers = [handler];
       this.listeners[eventName] = handlers;
     }
+    return this;
   }
 
-  removeEventListener(eventName, func: Function){
+  private removeEventListener(eventName, handler:(eventName:string, ...args:any[])=>any): Observable{
     let handlers:Function[] = this.listeners[eventName];
     if (handlers){
-      let index = handlers.indexOf(func);
+      let index = handlers.indexOf(handler);
       if (index > -1){
         handlers.splice(index, 1);
       }
     }
+    return this;
   }
 
-  dispatchEvent(eventName:string){
+  private dispatchEvent(eventName:string, ...args:any[]):void{
     let self = this;
-    let handlers: Function[] = self.listeners[eventName];
+    let handlers: ((event:ObjectEvent, ...args:any[])=>any)[];
+    handlers = self.listeners[eventName];
     let evt = new ObjectEvent(eventName);
     if (handlers){
       handlers.some(func=>{
         try {
-          func.call(self, evt);
+          let dispatchArgs = [evt].concat(args);
+          func.apply(self, dispatchArgs);
           if (evt.stop){
             return true;
           }
@@ -49,21 +53,10 @@ export default class Observable{
             return true;
           }
         }
-      })
+      });
     }
   }
 
-  fire(eventName:string){
-    this.dispatchEvent(eventName);
-  }
-
-  on(eventName:string, func:Function){
-    this.addEventListener(eventName, func);
-  }
-
-  un(eventName:string, func:Function){
-    this.removeEventListener(eventName, func);
-  }
 }
 
 class ObjectEvent{
@@ -77,3 +70,4 @@ class ObjectEvent{
     this.stopWhenError = true;
   }
 }
+export default Observable;
