@@ -247,10 +247,10 @@
 	        handlers = self.listeners[eventName];
 	        var evt = new ObjectEvent(eventName);
 	        if (handlers) {
-	            handlers.some(function (func) {
+	            handlers.some(function (handler) {
 	                try {
 	                    var dispatchArgs = [evt].concat(args);
-	                    func.apply(self, dispatchArgs);
+	                    handler.apply(self, dispatchArgs);
 	                    if (evt.stop) {
 	                        return true;
 	                    }

@@ -1,5 +1,5 @@
 export default class DelayTasks{
-  private tasks;
+  private tasks:{[key:string]:number};
   private logError = false;
 
   constructor(){
