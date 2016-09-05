@@ -207,6 +207,7 @@
 /* 2 */
 /***/ function(module, exports) {
 
+<<<<<<< HEAD
 	"use strict";
 	var Observable = (function () {
 	    function Observable() {
@@ -277,6 +278,78 @@
 	}());
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = Observable;
+=======
+	"use strict";
+	var Observable = (function () {
+	    function Observable() {
+	        var self = this;
+	        self.listeners = {};
+	        self.fire = self.dispatchEvent.bind(self);
+	        self.un = self.removeEventListener.bind(self);
+	        self.on = self.addEventListener.bind(self);
+	    }
+	    Observable.prototype.addEventListener = function (eventName, handler) {
+	        var handlers = this.listeners[eventName];
+	        if (handlers) {
+	            handlers.push(handler);
+	        }
+	        else {
+	            handlers = [handler];
+	            this.listeners[eventName] = handlers;
+	        }
+	        return this;
+	    };
+	    Observable.prototype.removeEventListener = function (eventName, handler) {
+	        var handlers = this.listeners[eventName];
+	        if (handlers) {
+	            var index = handlers.indexOf(handler);
+	            if (index > -1) {
+	                handlers.splice(index, 1);
+	            }
+	        }
+	        return this;
+	    };
+	    Observable.prototype.dispatchEvent = function (eventName) {
+	        var args = [];
+	        for (var _i = 1; _i < arguments.length; _i++) {
+	            args[_i - 1] = arguments[_i];
+	        }
+	        var self = this;
+	        var handlers;
+	        handlers = self.listeners[eventName];
+	        var evt = new ObjectEvent(eventName);
+	        if (handlers) {
+	            handlers.some(function (func) {
+	                try {
+	                    var dispatchArgs = [evt].concat(args);
+	                    func.apply(self, dispatchArgs);
+	                    if (evt.stop) {
+	                        return true;
+	                    }
+	                }
+	                catch (error) {
+	                    console.log("Error in dispatchEvent " + eventName + "..." + error.message);
+	                    if (evt.stopWhenError) {
+	                        return true;
+	                    }
+	                }
+	            });
+	        }
+	    };
+	    return Observable;
+	}());
+	exports.Observable = Observable;
+	var ObjectEvent = (function () {
+	    function ObjectEvent(name) {
+	        this.name = name;
+	        this.stop = false;
+	        this.stopWhenError = true;
+	    }
+	    return ObjectEvent;
+	}());
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Observable;
+>>>>>>> 7bf9a007e8c4e09d49d3c62364d0d9fba7291b79
 
 
 /***/ },
@@ -400,6 +473,13 @@
 	        else {
 	            popupQueue.push(noti);
 	        }
+	        //avoid if a notification throw exception and never fire dispose event, it will block all other notifications.
+	        window.setTimeout(function () {
+	            if (currentNoti == noti && !noti.closed) {
+	                currentNoti = null;
+	                remove(noti);
+	            }
+	        }, IENotification_1.IENotification.timeout);
 	    }
 	    IENotificationQueue.add = add;
 	    function remove(noti) {
