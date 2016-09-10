@@ -1,3 +1,5 @@
 node_modules/
 ts/*.js
 target/*
+/.project
+/IENotification.js.map

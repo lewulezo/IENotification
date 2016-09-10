@@ -1,6 +1,5 @@
 import {IENotification, EVENT_OPEN, EVENT_DISPOSE} from './IENotification';
 
-
 export module IENotificationQueue{
   let maxQueueSize = 20;
   let popupQueue:IENotification[] = [];
@@ -20,6 +19,13 @@ export module IENotificationQueue{
     } else {
       popupQueue.push(noti);
     }
+    //avoid if a notification throw exception and never fire dispose event, it will block all other notifications.
+    window.setTimeout(()=>{
+      if (currentNoti == noti && !noti.closed){
+        currentNoti = null;
+        remove(noti);
+      }
+    }, IENotification.timeout);
   }
 
   function remove(noti:IENotification){
