@@ -171,7 +171,7 @@
 	            self.onclick(event);
 	        }
 	        self.close();
-	        window.focus();
+	        WindowUtils_1.WindowUtils.forceFocus();
 	    };
 	    IENotification.timeout = 20000;
 	    IENotification.basePath = '';
@@ -505,6 +505,11 @@
 	        }
 	    }
 	    WindowUtils.hideWindowBehindDialog = hideWindowBehindDialog;
+	    function forceFocus() {
+	        window.open("about:blank").close();
+	        window.focus();
+	    }
+	    WindowUtils.forceFocus = forceFocus;
 	    function pxToNumber(str) {
 	        if (str.length < 2) {
 	            return 0;
