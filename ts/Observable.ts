@@ -1,8 +1,10 @@
+type EventHandler = (event:ObjectEvent, ...args:any[])=>any; 
+
 export class Observable{
-  private listeners:{[key:string]:((event:ObjectEvent, ...args:any[])=>any)[]};
+  private listeners:{[eventName:string]:EventHandler[]};
   public fire:(eventName:string, ...args:any[])=>void;
-  public on:(eventName:string, handler:(event:ObjectEvent, ...args:any[])=>any)=>Observable;
-  public un:(eventName:string, func:(event:ObjectEvent,...args:any[])=>any)=>Observable;
+  public on:(eventName:string, handler:EventHandler)=>Observable;
+  public un:(eventName:string, handler:EventHandler)=>Observable;
 
   constructor(){
     let self = this;
@@ -12,8 +14,8 @@ export class Observable{
     self.on = self.addEventListener.bind(self);
   }
 
-  private addEventListener(eventName:string, handler:(event:ObjectEvent, ...args:any[])=>any): Observable{
-    let handlers:((event:ObjectEvent, ...args:any[])=>any)[] = this.listeners[eventName];
+  private addEventListener(eventName:string, handler:EventHandler): Observable{
+    let handlers:EventHandler[] = this.listeners[eventName];
     if (handlers){
       handlers.push(handler);
     } else {
@@ -23,8 +25,8 @@ export class Observable{
     return this;
   }
 
-  private removeEventListener(eventName, handler:(event:ObjectEvent, ...args:any[])=>any): Observable{
-    let handlers:((event:ObjectEvent, ...args:any[])=>any)[] = this.listeners[eventName];
+  private removeEventListener(eventName, handler:EventHandler): Observable{
+    let handlers:EventHandler[] = this.listeners[eventName];
     if (handlers){
       let index = handlers.indexOf(handler);
       if (index > -1){
@@ -36,7 +38,7 @@ export class Observable{
 
   private dispatchEvent(eventName:string, ...args:any[]):void{
     let self = this;
-    let handlers: ((event:ObjectEvent, ...args:any[])=>any)[];
+    let handlers: EventHandler[];
     handlers = self.listeners[eventName];
     let evt = new ObjectEvent(eventName);
     if (handlers){

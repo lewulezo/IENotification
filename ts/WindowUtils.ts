@@ -92,6 +92,11 @@ export module WindowUtils{
     }
   }
 
+  export function forceFocus(){
+    window.open("about:blank").close();
+    window.focus();
+  }
+
   function pxToNumber(str:string):number{
     if (str.length < 2){
       return 0;

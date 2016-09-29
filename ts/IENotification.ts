@@ -157,7 +157,7 @@ export class IENotification extends Observable{
       self.onclick(event);
     }
     self.close();
-    window.focus();
+    WindowUtils.forceFocus();
   }
 }
 
