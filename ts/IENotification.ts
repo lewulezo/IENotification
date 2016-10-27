@@ -3,10 +3,9 @@ export declare class Promise<T>{
   constructor(callback:(resolve:(T)=>void, reject:Function)=>void);
 }
 
-import Observable from './Observable';
-import DelayTasks from './DelayTasks';
-import {IENotificationQueue} from './IENotificationQueue';
-import {IWindow, IDialog, WindowUtils} from './WindowUtils';
+import { Observable, DelayTasks } from './utils';
+import { IENotificationQueue } from './IENotificationQueue';
+import { IWindow, IDialog, WindowUtils } from './WindowUtils';
 
 declare var window:IWindow;
 //-------------------------------------------------------------------------------

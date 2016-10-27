@@ -45,7 +45,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	__webpack_require__(1);
-	module.exports = __webpack_require__(7);
+	module.exports = __webpack_require__(9);
 
 
 /***/ },
@@ -58,10 +58,9 @@
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var Observable_1 = __webpack_require__(2);
-	var DelayTasks_1 = __webpack_require__(3);
-	var IENotificationQueue_1 = __webpack_require__(4);
-	var WindowUtils_1 = __webpack_require__(5);
+	var utils_1 = __webpack_require__(2);
+	var IENotificationQueue_1 = __webpack_require__(6);
+	var WindowUtils_1 = __webpack_require__(7);
 	//-------------------------------------------------------------------------------
 	exports.EVENT_OPEN = 'OPEN';
 	exports.EVENT_DISPOSE = 'DISPOSE';
@@ -76,7 +75,7 @@
 	            self.icon = options.icon || '';
 	            self.data = options.data || '';
 	        }
-	        self._delayTasks = new DelayTasks_1.default();
+	        self._delayTasks = new utils_1.DelayTasks();
 	        self.closed = false;
 	        IENotificationQueue_1.IENotificationQueue.add(self);
 	    }
@@ -181,7 +180,7 @@
 	    IENotification.edgeX = 5;
 	    IENotification.edgeY = 20;
 	    return IENotification;
-	}(Observable_1.default));
+	}(utils_1.Observable));
 	exports.IENotification = IENotification;
 	function appendBlankForTitle(title) {
 	    var ret = [title];
@@ -205,6 +204,271 @@
 
 /***/ },
 /* 2 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var Serializer_1 = __webpack_require__(3);
+	exports.Serializer = Serializer_1.Serializer;
+	exports.Serializable = Serializer_1.Serializable;
+	var Observable_1 = __webpack_require__(4);
+	exports.Observable = Observable_1.Observable;
+	var DelayTasks_1 = __webpack_require__(5);
+	exports.DelayTasks = DelayTasks_1.DelayTasks;
+
+
+/***/ },
+/* 3 */
+/***/ function(module, exports) {
+
+	"use strict";
+	var classRegistry = {};
+	var ClassRegistration = (function () {
+	    function ClassRegistration(name, clazz, ignoredFields) {
+	        if (ignoredFields === void 0) { ignoredFields = []; }
+	        this.name = name;
+	        this.clazz = clazz;
+	        this.ignoredFields = ignoredFields;
+	    }
+	    return ClassRegistration;
+	}());
+	var defaultClassRegistration = new ClassRegistration('Object', Object);
+	classRegistry[defaultClassRegistration.name] = defaultClassRegistration;
+	classRegistry['Object'] = new ClassRegistration('Object', Object);
+	classRegistry['Array'] = new ClassRegistration('Array', Array);
+	var SerializeContext = (function () {
+	    function SerializeContext() {
+	        this._items = [];
+	    }
+	    SerializeContext.prototype.putOrigObj = function (id, origObj) {
+	        var item = this.getById(id);
+	        if (item) {
+	            item.origObj = origObj;
+	        }
+	        else {
+	            this._items.push({ id: id, origObj: origObj });
+	        }
+	    };
+	    SerializeContext.prototype.putConvObj = function (id, convObj) {
+	        var item = this.getById(id);
+	        if (item) {
+	            item.convObj = convObj;
+	        }
+	        else {
+	            this._items.push({ id: id, convObj: convObj });
+	        }
+	    };
+	    SerializeContext.prototype.forEach = function (callback) {
+	        this._items.forEach(function (item) { return callback(item.id, item.origObj, item.convObj); });
+	    };
+	    SerializeContext.prototype.getById = function (id) {
+	        var result = null;
+	        this._items.some(function (item) {
+	            if (item.id == id) {
+	                result = item;
+	                return true;
+	            }
+	        });
+	        return result;
+	    };
+	    SerializeContext.prototype.getByOrigObj = function (obj) {
+	        var result = null;
+	        this._items.some(function (item) {
+	            if (item.origObj === obj) {
+	                result = item;
+	                return true;
+	            }
+	        });
+	        return result;
+	    };
+	    return SerializeContext;
+	}());
+	function Serializable(name, ignoreFields) {
+	    return function (constructor) {
+	        Serializer.register(name, constructor, ignoreFields);
+	    };
+	}
+	exports.Serializable = Serializable;
+	var Serializer = (function () {
+	    function Serializer() {
+	    }
+	    //class registration-------------------------------------------------------
+	    Serializer.register = function (name, clazz, ignoredFields) {
+	        var reg = new ClassRegistration(name, clazz, ignoredFields);
+	        classRegistry[name] = reg;
+	        return reg;
+	    };
+	    Serializer.getClassRegistration = function (clazz) {
+	        var retVal = null;
+	        Object.keys(classRegistry).some(function (name) {
+	            var reg = classRegistry[name];
+	            if (reg.clazz === clazz) {
+	                retVal = reg;
+	                return true;
+	            }
+	        });
+	        // if (!retVal) {
+	        //   let name = Serializer.generateClassRegName(clazz);
+	        //   retVal = Serializer.register(name, clazz);
+	        // }
+	        return retVal;
+	    };
+	    //serial -----------------------------------------------------------------
+	    Serializer.prototype.serialize = function (object) {
+	        var context = new SerializeContext();
+	        var mainId = this.serializeSingleObject(object, context);
+	        var outputObj = { main: mainId };
+	        context.forEach(function (id, srcObj, tgtObj) {
+	            outputObj[id] = tgtObj;
+	        });
+	        return JSON.stringify(outputObj);
+	    };
+	    Serializer.prototype.serializeSingleObject = function (object, context) {
+	        var _this = this;
+	        if (!Serializer.isSerializable(object)) {
+	            return '';
+	        }
+	        var objId = Serializer.genId(context);
+	        context.putOrigObj(objId, object);
+	        var dataObj;
+	        if (object['serialize'] instanceof Function) {
+	            var serialStr = object['serialize']();
+	            dataObj = JSON.parse(serialStr);
+	        }
+	        else {
+	            dataObj = {};
+	            Object.keys(object).forEach(function (field) {
+	                if (!Serializer.isFieldSerializable(object, field)) {
+	                    return;
+	                }
+	                dataObj[field] = _this.convertValueForSerialize(object[field], context);
+	            });
+	        }
+	        var reg = Serializer.getClassRegistration(object.constructor);
+	        var tgtObj = { "class": reg.name, "data": dataObj };
+	        context.putConvObj(objId, tgtObj);
+	        return objId;
+	    };
+	    Serializer.genId = function (context) {
+	        var id;
+	        while (!id || context.getById(id) != null) {
+	            id = Serializer.uuid();
+	        }
+	        return id;
+	    };
+	    Serializer.prototype.convertValueForSerialize = function (value, context) {
+	        if (typeof value == 'object') {
+	            var contextItem = context.getByOrigObj(value);
+	            if (contextItem) {
+	                return { refId: contextItem.id };
+	            }
+	            else {
+	                return { refId: this.serializeSingleObject(value, context) };
+	            }
+	        }
+	        else {
+	            return value;
+	        }
+	    };
+	    Serializer.isFieldSerializable = function (object, field) {
+	        var value = object[field];
+	        var reg = Serializer.getClassRegistration(object.constructor);
+	        if (value === null || value === undefined) {
+	            return false;
+	        }
+	        if (reg.ignoredFields.indexOf(field) != -1) {
+	            return false;
+	        }
+	        if (typeof value === 'function') {
+	            return false;
+	        }
+	        if (typeof value === 'object') {
+	            if (value instanceof Array) {
+	                return true;
+	            }
+	            if (value.constructor === Object) {
+	                return true;
+	            }
+	            if (!Serializer.isSerializable(value)) {
+	                return false;
+	            }
+	        }
+	        return true;
+	    };
+	    Serializer.isSerializable = function (object) {
+	        return Serializer.getClassRegistration(object.constructor) != null;
+	    };
+	    //deserialize ----------------------------------------------------------
+	    Serializer.prototype.deserialize = function (str) {
+	        var _this = this;
+	        var context = new SerializeContext();
+	        var inputObj = JSON.parse(str);
+	        var refArray = [];
+	        var mainObjId = inputObj.main;
+	        delete inputObj.main;
+	        Object.keys(inputObj).forEach(function (key) {
+	            var serialObj = inputObj[key];
+	            context.putConvObj(key, serialObj);
+	            var obj = _this.deserializeSingleObj(serialObj, refArray);
+	            context.putOrigObj(key, obj);
+	        });
+	        refArray.forEach(function (ref) {
+	            ref.self[ref.field] = context.getById(ref.refId).origObj;
+	        });
+	        return context.getById(mainObjId).origObj;
+	    };
+	    Serializer.prototype.deserializeSingleObj = function (serialObj, refArray) {
+	        var reg = classRegistry[serialObj['class']] || defaultClassRegistration;
+	        var obj;
+	        if (serialObj.class == 'Object') {
+	            obj = {};
+	        }
+	        else if (serialObj.class == 'Array') {
+	            obj = [];
+	        }
+	        else {
+	            obj = Serializer.createObject(reg.clazz);
+	        }
+	        if (obj['deserialize'] instanceof Function) {
+	            obj.deserialize(JSON.stringify(serialObj.data));
+	        }
+	        else {
+	            Object.keys(serialObj.data).forEach(function (field) {
+	                var value = serialObj.data[field];
+	                if (typeof value == 'object') {
+	                    refArray.push({ self: obj, field: field, refId: value.refId });
+	                }
+	                else {
+	                    obj[field] = value;
+	                }
+	            });
+	        }
+	        return obj;
+	    };
+	    Serializer.createObject = function (clazz) {
+	        var obj = (Object.create(clazz.prototype));
+	        Object.defineProperty(obj, 'constructor', {
+	            value: clazz,
+	            enumerable: false
+	        });
+	        return obj;
+	    };
+	    Serializer.uuid = function () {
+	        var s = [];
+	        var hexDigits = "0123456789abcdef";
+	        for (var i = 0; i < 5; i++) {
+	            s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
+	        }
+	        return s.join("");
+	    };
+	    return Serializer;
+	}());
+	exports.Serializer = Serializer;
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Serializer;
+
+
+/***/ },
+/* 4 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -280,7 +544,7 @@
 
 
 /***/ },
-/* 3 */
+/* 5 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -370,12 +634,13 @@
 	    };
 	    return DelayTasks;
 	}());
+	exports.DelayTasks = DelayTasks;
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = DelayTasks;
 
 
 /***/ },
-/* 4 */
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -428,11 +693,11 @@
 
 
 /***/ },
-/* 5 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var Position_1 = __webpack_require__(6);
+	var Position_1 = __webpack_require__(8);
 	var WindowUtils;
 	(function (WindowUtils) {
 	    function getDialogPosition(dialog) {
@@ -535,7 +800,7 @@
 
 
 /***/ },
-/* 6 */
+/* 8 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -557,7 +822,7 @@
 
 
 /***/ },
-/* 7 */
+/* 9 */
 /***/ function(module, exports) {
 
 	"use strict";
