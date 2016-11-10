@@ -3,11 +3,13 @@
     "module": "commonjs",
     "target": "ES5",
     "outDir": "target/",
-    "sourceMap": true
+    "sourceMap": true,
+    "experimentalDecorators": true
   },
   "files": [
     "ts/IENotification.ts",
     "ts/IENotificationContentWindow.ts",
+    "ts/test/SerializerTest.ts",
     "typings/index.d.ts"
   ]
 }

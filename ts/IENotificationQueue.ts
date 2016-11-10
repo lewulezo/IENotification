@@ -1,4 +1,4 @@
-import { IENotification, EVENT_OPEN, EVENT_DISPOSE } from './IENotification';
+import { IENotification, EVENT_OPEN, EVENT_DISPOSE } from '.';
 
 export module IENotificationQueue{
   let maxQueueSize = 20;

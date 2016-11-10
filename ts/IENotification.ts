@@ -4,8 +4,7 @@ export declare class Promise<T>{
 }
 
 import { Observable, DelayTasks } from './utils';
-import { IENotificationQueue } from './IENotificationQueue';
-import { IWindow, IDialog, WindowUtils } from './WindowUtils';
+import { IENotificationQueue, IWindow, IDialog, WindowUtils } from '.';
 
 declare var window:IWindow;
 //-------------------------------------------------------------------------------
