@@ -58,7 +58,7 @@ function registerTransiantField(clazz:Function, fieldName:string) {
 
 function getClassRegistration(clazz:Function|string):ClassRegistration{
   if (typeof clazz == 'string'){
-    let className:string = clazz;
+    let className:string = <string>clazz;
     return classRegistry[className];
   } else {
     let retVal:ClassRegistration = null;

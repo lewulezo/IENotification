@@ -45,7 +45,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	__webpack_require__(1);
-	module.exports = __webpack_require__(9);
+	module.exports = __webpack_require__(12);
 
 
 /***/ },
@@ -59,8 +59,7 @@
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	var utils_1 = __webpack_require__(2);
-	var IENotificationQueue_1 = __webpack_require__(6);
-	var WindowUtils_1 = __webpack_require__(7);
+	var _1 = __webpack_require__(8);
 	//-------------------------------------------------------------------------------
 	exports.EVENT_OPEN = 'OPEN';
 	exports.EVENT_DISPOSE = 'DISPOSE';
@@ -77,7 +76,7 @@
 	        }
 	        self._delayTasks = new utils_1.DelayTasks();
 	        self.closed = false;
-	        IENotificationQueue_1.IENotificationQueue.add(self);
+	        _1.IENotificationQueue.add(self);
 	    }
 	    IENotification.prototype.show = function () {
 	        var self = this;
@@ -129,10 +128,10 @@
 	        var popup = bridge.showModelessDialog("content.html", self, "dialogWidth:" + width + "px;dialogHeight:" + height + "px;dialogTop:" + top + "px;dialogLeft:" + left + "px;center:0;resizable:0;scroll:0;status:0;alwaysRaised=yes");
 	        self._popup = popup;
 	        // self.delayTasks.addRepeatTask('fixDialogPosition', ()=>fixDialogPosition(popup), 100);
-	        WindowUtils_1.WindowUtils.setDialogPosition(popup, WindowUtils_1.WindowUtils.getDialogPosition(popup));
+	        _1.WindowUtils.setDialogPosition(popup, _1.WindowUtils.getDialogPosition(popup));
 	        self._delayTasks.addAwaitingTask('unloadBridge', function () { return bridge.addEventListener('unload', function () { return self.close(); }); }, function () { return bridge.addEventListener instanceof Function; }, 100);
-	        self._delayTasks.addRepeatTask('fixBridgePosition', function () { return WindowUtils_1.WindowUtils.hideWindowBehindDialog(bridge, popup); }, 100);
-	        self._delayTasks.addRepeatTask('hideDialogAfterMove', function () { return WindowUtils_1.WindowUtils.onDialogMoved(popup, function () { return self.close(); }); }, 100);
+	        self._delayTasks.addRepeatTask('fixBridgePosition', function () { return _1.WindowUtils.hideWindowBehindDialog(bridge, popup); }, 100);
+	        self._delayTasks.addRepeatTask('hideDialogAfterMove', function () { return _1.WindowUtils.onDialogMoved(popup, function () { return self.close(); }); }, 100);
 	        self._delayTasks.addTask('closePopup', function () { return self.close(); }, IENotification.timeout);
 	    };
 	    IENotification.prototype._initPopupContent = function (popup) {
@@ -170,7 +169,7 @@
 	            self.onclick(event);
 	        }
 	        self.close();
-	        WindowUtils_1.WindowUtils.forceFocus();
+	        _1.WindowUtils.forceFocus();
 	    };
 	    IENotification.timeout = 20000;
 	    IENotification.basePath = '';
@@ -207,34 +206,21 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var Serializer_1 = __webpack_require__(3);
-	exports.Serializer = Serializer_1.Serializer;
-	exports.Serializable = Serializer_1.Serializable;
-	var Observable_1 = __webpack_require__(4);
-	exports.Observable = Observable_1.Observable;
-	var DelayTasks_1 = __webpack_require__(5);
-	exports.DelayTasks = DelayTasks_1.DelayTasks;
+	function __export(m) {
+	    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	}
+	__export(__webpack_require__(3));
+	__export(__webpack_require__(6));
+	__export(__webpack_require__(7));
 
 
 /***/ },
 /* 3 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var classRegistry = {};
-	var ClassRegistration = (function () {
-	    function ClassRegistration(name, clazz, ignoredFields) {
-	        if (ignoredFields === void 0) { ignoredFields = []; }
-	        this.name = name;
-	        this.clazz = clazz;
-	        this.ignoredFields = ignoredFields;
-	    }
-	    return ClassRegistration;
-	}());
-	var defaultClassRegistration = new ClassRegistration('Object', Object);
-	classRegistry[defaultClassRegistration.name] = defaultClassRegistration;
-	classRegistry['Object'] = new ClassRegistration('Object', Object);
-	classRegistry['Array'] = new ClassRegistration('Array', Array);
+	var SerializerRegistry_1 = __webpack_require__(4);
+	var uuid_1 = __webpack_require__(5);
 	var SerializeContext = (function () {
 	    function SerializeContext() {
 	        this._items = [];
@@ -282,124 +268,19 @@
 	    };
 	    return SerializeContext;
 	}());
-	function Serializable(name, ignoreFields) {
-	    return function (constructor) {
-	        Serializer.register(name, constructor, ignoreFields);
-	    };
-	}
-	exports.Serializable = Serializable;
 	var Serializer = (function () {
 	    function Serializer() {
 	    }
-	    //class registration-------------------------------------------------------
-	    Serializer.register = function (name, clazz, ignoredFields) {
-	        var reg = new ClassRegistration(name, clazz, ignoredFields);
-	        classRegistry[name] = reg;
-	        return reg;
-	    };
-	    Serializer.getClassRegistration = function (clazz) {
-	        var retVal = null;
-	        Object.keys(classRegistry).some(function (name) {
-	            var reg = classRegistry[name];
-	            if (reg.clazz === clazz) {
-	                retVal = reg;
-	                return true;
-	            }
-	        });
-	        // if (!retVal) {
-	        //   let name = Serializer.generateClassRegName(clazz);
-	        //   retVal = Serializer.register(name, clazz);
-	        // }
-	        return retVal;
-	    };
-	    //serial -----------------------------------------------------------------
-	    Serializer.prototype.serialize = function (object) {
+	    Serializer.serialize = function (object) {
 	        var context = new SerializeContext();
-	        var mainId = this.serializeSingleObject(object, context);
+	        var mainId = serializeSingleObject(object, context);
 	        var outputObj = { main: mainId };
 	        context.forEach(function (id, srcObj, tgtObj) {
 	            outputObj[id] = tgtObj;
 	        });
 	        return JSON.stringify(outputObj);
 	    };
-	    Serializer.prototype.serializeSingleObject = function (object, context) {
-	        var _this = this;
-	        if (!Serializer.isSerializable(object)) {
-	            return '';
-	        }
-	        var objId = Serializer.genId(context);
-	        context.putOrigObj(objId, object);
-	        var dataObj;
-	        if (object['serialize'] instanceof Function) {
-	            var serialStr = object['serialize']();
-	            dataObj = JSON.parse(serialStr);
-	        }
-	        else {
-	            dataObj = {};
-	            Object.keys(object).forEach(function (field) {
-	                if (!Serializer.isFieldSerializable(object, field)) {
-	                    return;
-	                }
-	                dataObj[field] = _this.convertValueForSerialize(object[field], context);
-	            });
-	        }
-	        var reg = Serializer.getClassRegistration(object.constructor);
-	        var tgtObj = { "class": reg.name, "data": dataObj };
-	        context.putConvObj(objId, tgtObj);
-	        return objId;
-	    };
-	    Serializer.genId = function (context) {
-	        var id;
-	        while (!id || context.getById(id) != null) {
-	            id = Serializer.uuid();
-	        }
-	        return id;
-	    };
-	    Serializer.prototype.convertValueForSerialize = function (value, context) {
-	        if (typeof value == 'object') {
-	            var contextItem = context.getByOrigObj(value);
-	            if (contextItem) {
-	                return { refId: contextItem.id };
-	            }
-	            else {
-	                return { refId: this.serializeSingleObject(value, context) };
-	            }
-	        }
-	        else {
-	            return value;
-	        }
-	    };
-	    Serializer.isFieldSerializable = function (object, field) {
-	        var value = object[field];
-	        var reg = Serializer.getClassRegistration(object.constructor);
-	        if (value === null || value === undefined) {
-	            return false;
-	        }
-	        if (reg.ignoredFields.indexOf(field) != -1) {
-	            return false;
-	        }
-	        if (typeof value === 'function') {
-	            return false;
-	        }
-	        if (typeof value === 'object') {
-	            if (value instanceof Array) {
-	                return true;
-	            }
-	            if (value.constructor === Object) {
-	                return true;
-	            }
-	            if (!Serializer.isSerializable(value)) {
-	                return false;
-	            }
-	        }
-	        return true;
-	    };
-	    Serializer.isSerializable = function (object) {
-	        return Serializer.getClassRegistration(object.constructor) != null;
-	    };
-	    //deserialize ----------------------------------------------------------
-	    Serializer.prototype.deserialize = function (str) {
-	        var _this = this;
+	    Serializer.deserialize = function (str) {
 	        var context = new SerializeContext();
 	        var inputObj = JSON.parse(str);
 	        var refArray = [];
@@ -408,67 +289,272 @@
 	        Object.keys(inputObj).forEach(function (key) {
 	            var serialObj = inputObj[key];
 	            context.putConvObj(key, serialObj);
-	            var obj = _this.deserializeSingleObj(serialObj, refArray);
+	            var obj = deserializeSingleObj(serialObj, refArray);
 	            context.putOrigObj(key, obj);
 	        });
 	        refArray.forEach(function (ref) {
 	            ref.self[ref.field] = context.getById(ref.refId).origObj;
 	        });
-	        return context.getById(mainObjId).origObj;
-	    };
-	    Serializer.prototype.deserializeSingleObj = function (serialObj, refArray) {
-	        var reg = classRegistry[serialObj['class']] || defaultClassRegistration;
-	        var obj;
-	        if (serialObj.class == 'Object') {
-	            obj = {};
-	        }
-	        else if (serialObj.class == 'Array') {
-	            obj = [];
-	        }
-	        else {
-	            obj = Serializer.createObject(reg.clazz);
-	        }
-	        if (obj['deserialize'] instanceof Function) {
-	            obj.deserialize(JSON.stringify(serialObj.data));
-	        }
-	        else {
-	            Object.keys(serialObj.data).forEach(function (field) {
-	                var value = serialObj.data[field];
-	                if (typeof value == 'object') {
-	                    refArray.push({ self: obj, field: field, refId: value.refId });
-	                }
-	                else {
-	                    obj[field] = value;
-	                }
-	            });
-	        }
-	        return obj;
-	    };
-	    Serializer.createObject = function (clazz) {
-	        var obj = (Object.create(clazz.prototype));
-	        Object.defineProperty(obj, 'constructor', {
-	            value: clazz,
-	            enumerable: false
-	        });
-	        return obj;
-	    };
-	    Serializer.uuid = function () {
-	        var s = [];
-	        var hexDigits = "0123456789abcdef";
-	        for (var i = 0; i < 5; i++) {
-	            s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
-	        }
-	        return s.join("");
+	        return (context.getById(mainObjId).origObj);
 	    };
 	    return Serializer;
 	}());
 	exports.Serializer = Serializer;
+	//functions for serialize -----------------------------------------------------------
+	function serializeSingleObject(object, context) {
+	    if (!isSerializable(object)) {
+	        return '';
+	    }
+	    var objId = genId(context);
+	    context.putOrigObj(objId, object);
+	    var dataObj;
+	    if (object['serialize'] instanceof Function) {
+	        var serialStr = object['serialize']();
+	        dataObj = JSON.parse(serialStr);
+	    }
+	    else {
+	        dataObj = {};
+	        Object.keys(object).forEach(function (field) {
+	            if (!isFieldSerializable(object, field)) {
+	                return;
+	            }
+	            dataObj[field] = convertValueForSerialize(object[field], context);
+	        });
+	    }
+	    var reg = SerializerRegistry_1.SerializerRegistry.getClassRegistration(object.constructor);
+	    var tgtObj = { "class": reg.name, "data": dataObj };
+	    context.putConvObj(objId, tgtObj);
+	    return objId;
+	}
+	function genId(context) {
+	    var id;
+	    while (!id || context.getById(id) != null) {
+	        id = uuid_1.uuid();
+	    }
+	    return id;
+	}
+	function convertValueForSerialize(value, context) {
+	    if (typeof value == 'object') {
+	        var contextItem = context.getByOrigObj(value);
+	        if (contextItem) {
+	            return { refId: contextItem.id };
+	        }
+	        else {
+	            return { refId: serializeSingleObject(value, context) };
+	        }
+	    }
+	    else {
+	        return value;
+	    }
+	}
+	function isFieldSerializable(object, field) {
+	    var value = object[field];
+	    var reg = SerializerRegistry_1.SerializerRegistry.getClassRegistration(object.constructor);
+	    if (value === null || value === undefined) {
+	        return false;
+	    }
+	    if (reg.ignoredFields.indexOf(field) != -1) {
+	        return false;
+	    }
+	    if (typeof value === 'function') {
+	        return false;
+	    }
+	    if (typeof value === 'object') {
+	        if (value instanceof Array) {
+	            return true;
+	        }
+	        if (value.constructor === Object) {
+	            return true;
+	        }
+	        if (!isSerializable(value)) {
+	            return false;
+	        }
+	    }
+	    return true;
+	}
+	function isSerializable(object) {
+	    return SerializerRegistry_1.SerializerRegistry.getClassRegistration(object.constructor) != null;
+	}
+	function deserializeSingleObj(serialObj, refArray) {
+	    var reg = SerializerRegistry_1.SerializerRegistry.getClassRegistration(serialObj['class']) || SerializerRegistry_1.defaultClassRegistration;
+	    var obj;
+	    if (serialObj.class == 'Object') {
+	        obj = {};
+	    }
+	    else if (serialObj.class == 'Array') {
+	        obj = [];
+	    }
+	    else {
+	        obj = createObject(reg.clazz);
+	    }
+	    if (obj['deserialize'] instanceof Function) {
+	        obj.deserialize(JSON.stringify(serialObj.data));
+	    }
+	    else {
+	        Object.keys(serialObj.data).forEach(function (field) {
+	            var value = serialObj.data[field];
+	            if (typeof value == 'object') {
+	                refArray.push({ self: obj, field: field, refId: value.refId });
+	            }
+	            else {
+	                obj[field] = value;
+	            }
+	        });
+	    }
+	    return obj;
+	}
+	function createObject(clazz) {
+	    var obj = Object.create(clazz.prototype);
+	    Object.defineProperty(obj, 'constructor', {
+	        value: clazz,
+	        enumerable: false
+	    });
+	    return obj;
+	}
+	//functions for decorators ---------------------------------------------------------
+	function Serializable(name, ignoreFields) {
+	    return function (constructor) {
+	        SerializerRegistry_1.SerializerRegistry.registerClass(constructor, name, ignoreFields);
+	    };
+	}
+	exports.Serializable = Serializable;
+	function transiant(target, fieldName) {
+	    SerializerRegistry_1.SerializerRegistry.registerTransiantField(target.constructor, fieldName);
+	}
+	exports.transiant = transiant;
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = Serializer;
 
 
 /***/ },
 /* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var uuid_1 = __webpack_require__(5);
+	var classRegistry = {};
+	var SerializerRegistry = (function () {
+	    function SerializerRegistry() {
+	    }
+	    SerializerRegistry.registerClass = function (clazz, name, ignoreFields) {
+	        return registerClass(clazz, name, ignoreFields);
+	    };
+	    SerializerRegistry.registerTransiantField = function (clazz, fieldName) {
+	        return registerTransiantField(clazz, fieldName);
+	    };
+	    SerializerRegistry.getClassRegistration = function (clazz) {
+	        return getClassRegistration(clazz);
+	    };
+	    return SerializerRegistry;
+	}());
+	exports.SerializerRegistry = SerializerRegistry;
+	var ClassRegistration = (function () {
+	    function ClassRegistration(name, clazz, ignoredFields) {
+	        if (ignoredFields === void 0) { ignoredFields = []; }
+	        this.name = name;
+	        this.clazz = clazz;
+	        this.ignoredFields = ignoredFields;
+	        this.anonymous = false;
+	    }
+	    return ClassRegistration;
+	}());
+	function registerClass(clazz, name, ignoredFields) {
+	    var reg = getClassRegistration(clazz);
+	    if (!reg) {
+	        var anonymous = false;
+	        if (!name) {
+	            name = generateAnonymousClassRegName(clazz);
+	            anonymous = true;
+	        }
+	        reg = new ClassRegistration(name, clazz, ignoredFields);
+	        reg.anonymous = anonymous;
+	        classRegistry[name] = reg;
+	    }
+	    else if (reg.anonymous) {
+	        if (name) {
+	            var tempName = reg.name;
+	            reg.name = name;
+	            classRegistry[name] = reg;
+	            delete classRegistry[tempName];
+	        }
+	    }
+	    mergeArrayField(reg, 'ignoreFields', ignoredFields);
+	    return reg;
+	}
+	function registerTransiantField(clazz, fieldName) {
+	    var reg = getClassRegistration(clazz);
+	    if (!reg) {
+	        reg = registerClass(clazz);
+	    }
+	    if (reg.ignoredFields.indexOf(fieldName) == -1) {
+	        reg.ignoredFields.push(fieldName);
+	    }
+	}
+	function getClassRegistration(clazz) {
+	    if (typeof clazz == 'string') {
+	        var className = clazz;
+	        return classRegistry[className];
+	    }
+	    else {
+	        var retVal_1 = null;
+	        Object.keys(classRegistry).some(function (name) {
+	            var reg = classRegistry[name];
+	            if (reg.clazz === clazz) {
+	                retVal_1 = reg;
+	                return true;
+	            }
+	        });
+	        return retVal_1;
+	    }
+	}
+	function generateAnonymousClassRegName(clazz) {
+	    var funcName = clazz['name'];
+	    if (!funcName) {
+	        var funcName_1 = clazz.toString();
+	        funcName_1 = funcName_1.substr(9);
+	        funcName_1 = funcName_1.substr(0, funcName_1.indexOf('('));
+	    }
+	    return [funcName, Date.now(), uuid_1.uuid()].join('-');
+	}
+	function mergeArrayField(obj, field, arr) {
+	    if (!arr) {
+	        return;
+	    }
+	    var tgtArr = obj[field];
+	    if (!tgtArr) {
+	        tgtArr = [];
+	        obj[field] = tgtArr;
+	    }
+	    arr.forEach(function (item) {
+	        if (tgtArr.indexOf(item) == -1) {
+	            tgtArr.push(item);
+	        }
+	    });
+	}
+	exports.defaultClassRegistration = new ClassRegistration('Object', Object);
+	classRegistry[exports.defaultClassRegistration.name] = exports.defaultClassRegistration;
+	classRegistry['Object'] = new ClassRegistration('Object', Object);
+	classRegistry['Array'] = new ClassRegistration('Array', Array);
+
+
+/***/ },
+/* 5 */
+/***/ function(module, exports) {
+
+	"use strict";
+	function uuid() {
+	    var s = [];
+	    var hexDigits = "0123456789abcdef";
+	    for (var i = 0; i < 5; i++) {
+	        s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
+	    }
+	    return s.join("");
+	}
+	exports.uuid = uuid;
+
+
+/***/ },
+/* 6 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -544,7 +630,7 @@
 
 
 /***/ },
-/* 5 */
+/* 7 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -640,11 +726,25 @@
 
 
 /***/ },
-/* 6 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var IENotification_1 = __webpack_require__(1);
+	function __export(m) {
+	    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	}
+	__export(__webpack_require__(1));
+	__export(__webpack_require__(9));
+	__export(__webpack_require__(10));
+	__export(__webpack_require__(11));
+
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var _1 = __webpack_require__(8);
 	var IENotificationQueue;
 	(function (IENotificationQueue) {
 	    var maxQueueSize = 20;
@@ -654,8 +754,8 @@
 	        if (popupQueue.length > maxQueueSize) {
 	            return;
 	        }
-	        noti.on(IENotification_1.EVENT_OPEN, function () { return currentNoti = noti; });
-	        noti.on(IENotification_1.EVENT_DISPOSE, function () {
+	        noti.on(_1.EVENT_OPEN, function () { return currentNoti = noti; });
+	        noti.on(_1.EVENT_DISPOSE, function () {
 	            currentNoti = null;
 	            remove(noti);
 	        });
@@ -671,7 +771,7 @@
 	                currentNoti = null;
 	                remove(noti);
 	            }
-	        }, IENotification_1.IENotification.timeout);
+	        }, _1.IENotification.timeout);
 	    }
 	    IENotificationQueue.add = add;
 	    function remove(noti) {
@@ -693,11 +793,11 @@
 
 
 /***/ },
-/* 7 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var Position_1 = __webpack_require__(8);
+	var Position_1 = __webpack_require__(11);
 	var WindowUtils;
 	(function (WindowUtils) {
 	    function getDialogPosition(dialog) {
@@ -800,7 +900,7 @@
 
 
 /***/ },
-/* 8 */
+/* 11 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -822,7 +922,7 @@
 
 
 /***/ },
-/* 9 */
+/* 12 */
 /***/ function(module, exports) {
 
 	"use strict";
